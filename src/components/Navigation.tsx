@@ -91,7 +91,7 @@ export function Navigation() {
 
   const navItems = [
     { href: '/designs', label: 'Designs' },
-    { href: 'https://listingleads.com/plan', label: 'Weekly Plan', external: true },
+    { href: '/listing-attraction-plan', label: 'Weekly Plan' },
     { href: '/profile', label: 'Profile' },
   ]
 
