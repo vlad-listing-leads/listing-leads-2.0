@@ -31,8 +31,7 @@ export function ColorPickerField({ field, value, onChange, error }: ColorPickerF
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || '#000000'}
-          className="flex-1"
-          error={!!error}
+          className={`flex-1 ${error ? 'border-red-500' : ''}`}
         />
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   const email = searchParams.get('email')
   const timestamp = searchParams.get('t')
   const token = searchParams.get('token')
-  const redirectTo = searchParams.get('redirect') || '/designs'
+  const redirectTo = searchParams.get('redirect') || '/plan'
 
   if (!memberstackId || !email || !timestamp || !token) {
     return NextResponse.redirect(new URL('/login?error=missing_params', request.url))

@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { CampaignCategory, CampaignCard } from '@/types/campaigns'
 
-// Get user's favorites
+// Table names for each category
+const categoryTables: Record<CampaignCategory, string> = {
+  'phone-text-scripts': 'phone_text_scripts',
+  'email-campaigns': 'email_campaigns',
+  'direct-mail': 'direct_mail_templates',
+  'social-shareables': 'social_shareables',
+}
+
+// Get user's favorites with campaign details
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -11,23 +20,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get all favorites
     const { data: favorites, error } = await supabase
-      .from('user_favorites')
-      .select(`
-        id,
-        campaign_id,
-        created_at,
-        weekly_campaigns (
-          id,
-          title,
-          description,
-          category,
-          thumbnail_url,
-          content_url,
-          week_start_date,
-          day_of_week
-        )
-      `)
+      .from('campaign_favorites')
+      .select('id, category, item_id, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -36,7 +32,58 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch favorites' }, { status: 500 })
     }
 
-    return NextResponse.json({ favorites })
+    // Group favorites by category
+    const favoritesByCategory: Record<string, string[]> = {}
+    for (const fav of favorites || []) {
+      if (!favoritesByCategory[fav.category]) {
+        favoritesByCategory[fav.category] = []
+      }
+      favoritesByCategory[fav.category].push(fav.item_id)
+    }
+
+    // Fetch campaign details for each category
+    const campaignsWithDetails: (CampaignCard & { favorite_id: string; favorite_created_at: string })[] = []
+
+    for (const [category, itemIds] of Object.entries(favoritesByCategory)) {
+      const tableName = categoryTables[category as CampaignCategory]
+      if (!tableName || itemIds.length === 0) continue
+
+      const { data: campaigns } = await supabase
+        .from(tableName)
+        .select('id, name, slug, introduction, thumbnail_url, region, is_featured, week_start_date, day_of_week')
+        .in('id', itemIds)
+
+      if (campaigns) {
+        for (const campaign of campaigns) {
+          const favorite = favorites?.find(f => f.item_id === campaign.id)
+          campaignsWithDetails.push({
+            id: campaign.id,
+            name: campaign.name,
+            slug: campaign.slug,
+            introduction: campaign.introduction,
+            thumbnail_url: campaign.thumbnail_url,
+            category: category as CampaignCategory,
+            is_featured: campaign.is_featured,
+            region: campaign.region,
+            week_start_date: campaign.week_start_date,
+            day_of_week: campaign.day_of_week,
+            isFavorite: true,
+            favorite_id: favorite?.id || '',
+            favorite_created_at: favorite?.created_at || '',
+            // Legacy fields
+            title: campaign.name,
+            description: campaign.introduction,
+          })
+        }
+      }
+    }
+
+    // Sort by favorite creation date
+    campaignsWithDetails.sort((a, b) =>
+      new Date(b.favorite_created_at).getTime() - new Date(a.favorite_created_at).getTime()
+    )
+
+    return NextResponse.json({ favorites: campaignsWithDetails })
   } catch (error) {
     console.error('Favorites error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -53,24 +100,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { campaignId } = await request.json()
+    const { campaignId, category } = await request.json()
 
-    if (!campaignId) {
-      return NextResponse.json({ error: 'Campaign ID required' }, { status: 400 })
+    if (!campaignId || !category) {
+      return NextResponse.json({ error: 'Campaign ID and category required' }, { status: 400 })
     }
 
     const { data, error } = await supabase
-      .from('user_favorites')
+      .from('campaign_favorites')
       .insert({
         user_id: user.id,
-        campaign_id: campaignId
+        item_id: campaignId,
+        category: category
       })
       .select()
       .single()
 
     if (error) {
       if (error.code === '23505') {
-        // Already favorited
         return NextResponse.json({ message: 'Already favorited' })
       }
       console.error('Error adding favorite:', error)
@@ -96,16 +143,18 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const campaignId = searchParams.get('campaignId')
+    const category = searchParams.get('category')
 
-    if (!campaignId) {
-      return NextResponse.json({ error: 'Campaign ID required' }, { status: 400 })
+    if (!campaignId || !category) {
+      return NextResponse.json({ error: 'Campaign ID and category required' }, { status: 400 })
     }
 
     const { error } = await supabase
-      .from('user_favorites')
+      .from('campaign_favorites')
       .delete()
       .eq('user_id', user.id)
-      .eq('campaign_id', campaignId)
+      .eq('item_id', campaignId)
+      .eq('category', category)
 
     if (error) {
       console.error('Error removing favorite:', error)

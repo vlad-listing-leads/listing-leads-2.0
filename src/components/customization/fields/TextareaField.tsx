@@ -23,7 +23,7 @@ export function TextareaField({ field, value, onChange, error }: TextareaFieldPr
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder || undefined}
         rows={4}
-        error={!!error}
+        className={error ? 'border-red-500' : ''}
       />
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>

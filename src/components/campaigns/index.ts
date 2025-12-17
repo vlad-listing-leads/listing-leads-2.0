@@ -1,3 +1,5 @@
-export { CampaignSidebar } from './Sidebar'
+export { AppSidebar } from './AppSidebar'
 export { CampaignCard } from './CampaignCard'
 export { CampaignPreviewModal } from './CampaignPreviewModal'
+export { CampaignFilters } from './CampaignFilters'
+export { GlobalSearch } from './GlobalSearch'

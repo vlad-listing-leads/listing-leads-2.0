@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  const redirectTo = request.nextUrl.searchParams.get('redirect') || '/designs'
+  const redirectTo = request.nextUrl.searchParams.get('redirect') || '/plan'
 
   try {
     const supabaseAdmin = createAdminClient()

@@ -90,8 +90,8 @@ export function Navigation() {
   }
 
   const navItems = [
+    { href: '/plan', label: 'Weekly Plan' },
     { href: '/designs', label: 'Designs' },
-    { href: '/listing-attraction-plan', label: 'Weekly Plan' },
     { href: '/profile', label: 'Profile' },
   ]
 
@@ -119,7 +119,7 @@ export function Navigation() {
         {/* Logo - Left */}
         <div className="flex-1 flex items-center gap-4">
           <Link
-            href="/designs"
+            href="/plan"
             className="hover:opacity-70 transition-opacity"
           >
             <Image

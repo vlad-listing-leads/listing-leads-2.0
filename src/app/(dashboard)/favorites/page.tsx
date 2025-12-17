@@ -3,20 +3,20 @@
 import { useState, useEffect } from 'react'
 import { Heart, Calendar, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignSidebar, CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
-import { Campaign, categoryConfig, CampaignCategory } from '@/types/campaigns'
+import { CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
+import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
 interface FavoriteItem {
   id: string
   campaign_id: string
   created_at: string
-  weekly_campaigns: Campaign
+  weekly_campaigns: CampaignCardType
 }
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
 
@@ -40,7 +40,7 @@ export default function FavoritesPage() {
     fetchFavorites()
   }, [])
 
-  const handleCampaignClick = (campaign: Campaign) => {
+  const handleCampaignClick = (campaign: CampaignCardType) => {
     setSelectedCampaign({ ...campaign, isFavorite: true })
     setIsModalOpen(true)
   }
@@ -88,16 +88,16 @@ export default function FavoritesPage() {
   }, {} as Record<CampaignCategory, FavoriteItem[]>)
 
   return (
-    <div className="flex min-h-screen -mx-6 -my-8 bg-background">
-      {/* Sidebar */}
-      <CampaignSidebar favoritesCount={favorites.length} />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
-          <h1 className="text-sm font-medium text-muted-foreground">My Favorites</h1>
-          <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full bg-background">
+      {/* Page Content */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        {/* Page Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Heart className="w-8 h-8 text-red-500 fill-red-500" />
+              <h1 className="text-3xl font-bold text-foreground">My Favorites</h1>
+            </div>
             {favorites.length > 0 && (
               <button
                 onClick={handleRemoveAll}
@@ -108,107 +108,96 @@ export default function FavoritesPage() {
               </button>
             )}
           </div>
-        </header>
+          <p className="text-muted-foreground">
+            Your saved campaigns and templates for quick access.
+          </p>
+        </div>
 
-        {/* Page Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
-          {/* Page Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Heart className="w-8 h-8 text-red-500 fill-red-500" />
-              <h1 className="text-3xl font-bold text-foreground">My Favorites</h1>
+        {/* Category Filter */}
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={cn(
+              'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
+              categoryFilter === 'all'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            )}
+          >
+            All ({favorites.length})
+          </button>
+          {(Object.keys(categoryConfig) as CampaignCategory[]).map(category => {
+            const count = favorites.filter(f => f.weekly_campaigns?.category === category).length
+            if (count === 0) return null
+            return (
+              <button
+                key={category}
+                onClick={() => setCategoryFilter(category)}
+                className={cn(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
+                  categoryFilter === category
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                )}
+              >
+                {categoryConfig[category].label} ({count})
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading favorites...</p>
             </div>
-            <p className="text-muted-foreground">
-              Your saved campaigns and templates for quick access.
-            </p>
           </div>
-
-          {/* Category Filter */}
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={cn(
-                'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-                categoryFilter === 'all'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-            >
-              All ({favorites.length})
-            </button>
-            {(Object.keys(categoryConfig) as CampaignCategory[]).map(category => {
-              const count = favorites.filter(f => f.weekly_campaigns?.category === category).length
-              if (count === 0) return null
-              return (
-                <button
-                  key={category}
-                  onClick={() => setCategoryFilter(category)}
-                  className={cn(
-                    'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-                    categoryFilter === category
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  )}
-                >
-                  {categoryConfig[category].label} ({count})
-                </button>
-              )
-            })}
+        ) : filteredFavorites.length === 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-2">No favorites yet</h3>
+              <p className="text-muted-foreground">
+                {categoryFilter !== 'all'
+                  ? 'No favorites in this category'
+                  : 'Click the heart icon on any campaign to save it here'}
+              </p>
+            </div>
           </div>
-
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading favorites...</p>
-              </div>
-            </div>
-          ) : filteredFavorites.length === 0 ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Heart className="w-8 h-8 text-muted-foreground" />
+        ) : (
+          /* Favorites Grid */
+          <div className="space-y-8">
+            {(Object.keys(groupedFavorites) as CampaignCategory[]).map(category => (
+              <div key={category}>
+                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span className={cn(
+                    'w-3 h-3 rounded-full',
+                    category === 'social-shareables' && 'bg-purple-500',
+                    category === 'email-campaigns' && 'bg-blue-500',
+                    category === 'phone-text-scripts' && 'bg-green-500',
+                    category === 'direct-mail' && 'bg-orange-500'
+                  )} />
+                  {categoryConfig[category].label}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {groupedFavorites[category].map(fav => (
+                    <CampaignCard
+                      key={fav.id}
+                      campaign={{ ...fav.weekly_campaigns, isFavorite: true }}
+                      onClick={handleCampaignClick}
+                      onFavoriteToggle={handleFavoriteToggle}
+                    />
+                  ))}
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">No favorites yet</h3>
-                <p className="text-muted-foreground">
-                  {categoryFilter !== 'all'
-                    ? 'No favorites in this category'
-                    : 'Click the heart icon on any campaign to save it here'}
-                </p>
               </div>
-            </div>
-          ) : (
-            /* Favorites Grid */
-            <div className="space-y-8">
-              {(Object.keys(groupedFavorites) as CampaignCategory[]).map(category => (
-                <div key={category}>
-                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <span className={cn(
-                      'w-3 h-3 rounded-full',
-                      category === 'social-shareables' && 'bg-purple-500',
-                      category === 'email-campaigns' && 'bg-blue-500',
-                      category === 'phone-text-scripts' && 'bg-green-500',
-                      category === 'direct-mail' && 'bg-orange-500'
-                    )} />
-                    {categoryConfig[category].label}
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {groupedFavorites[category].map(fav => (
-                      <CampaignCard
-                        key={fav.id}
-                        campaign={{ ...fav.weekly_campaigns, isFavorite: true }}
-                        onClick={handleCampaignClick}
-                        onFavoriteToggle={handleFavoriteToggle}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+            ))}
+          </div>
+        )}
+      </main>
 
       {/* Preview Modal */}
       <CampaignPreviewModal

@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { X, Heart, Copy, Check, ExternalLink, Download, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Campaign, categoryConfig } from '@/types/campaigns'
+import { CampaignCard, categoryConfig } from '@/types/campaigns'
 
 interface CampaignPreviewModalProps {
-  campaign: Campaign | null
+  campaign: CampaignCard | null
   isOpen: boolean
   onClose: () => void
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
@@ -87,9 +87,11 @@ export function CampaignPreviewModal({
             <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', config.color, config.darkColor)}>
               {config.label}
             </span>
-            <span className="text-sm text-muted-foreground">
-              Week of {formatDate(campaign.week_start_date)}
-            </span>
+            {campaign.week_start_date && (
+              <span className="text-sm text-muted-foreground">
+                Week of {formatDate(campaign.week_start_date)}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -162,12 +164,12 @@ export function CampaignPreviewModal({
           {/* Details sidebar */}
           <div className="w-80 border-l border-border p-6 overflow-y-auto">
             <h2 className="text-xl font-semibold text-foreground mb-2">
-              {campaign.title}
+              {campaign.name || campaign.title}
             </h2>
 
-            {campaign.description && (
+            {(campaign.introduction || campaign.description) && (
               <p className="text-muted-foreground mb-6">
-                {campaign.description}
+                {campaign.introduction || campaign.description}
               </p>
             )}
 
@@ -177,17 +179,21 @@ export function CampaignPreviewModal({
                 <p className="text-foreground">{config.label}</p>
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Week</h3>
-                <p className="text-foreground">{formatDate(campaign.week_start_date)}</p>
-              </div>
+              {campaign.week_start_date && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Week</h3>
+                  <p className="text-foreground">{formatDate(campaign.week_start_date)}</p>
+                </div>
+              )}
 
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Day</h3>
-                <p className="text-foreground">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][campaign.day_of_week]}
-                </p>
-              </div>
+              {campaign.day_of_week !== null && campaign.day_of_week !== undefined && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Day</h3>
+                  <p className="text-foreground">
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][campaign.day_of_week]}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Action buttons */}

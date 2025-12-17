@@ -28,7 +28,7 @@ export function SelectField({ field, value, onChange, error }: SelectFieldProps)
         id={field.field_key}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        error={!!error}
+        className={error ? 'border-red-500' : ''}
       >
         <option value="">Select an option</option>
         {options.map((option, index) => (

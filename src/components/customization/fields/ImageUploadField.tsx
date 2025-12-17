@@ -186,7 +186,7 @@ export function ImageUploadField({ field, value, onChange, error, uploadOnly = f
           value={value}
           onChange={(e) => handleUrlChange(e.target.value)}
           placeholder={field.placeholder || 'https://example.com/image.jpg'}
-          error={!!error}
+          className={error ? 'border-red-500' : ''}
         />
       ) : (
         <>

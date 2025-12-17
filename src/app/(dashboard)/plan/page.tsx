@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Search, Heart, HelpCircle, User, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignSidebar, CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
-import { Campaign, WeekData, categoryConfig, CampaignCategory } from '@/types/campaigns'
+import { CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
+import { CampaignCard as CampaignCardType, WeekData, categoryConfig, CampaignCategory } from '@/types/campaigns'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 
 // Region options
 const regions = [
@@ -55,7 +56,7 @@ function WeekSection({
   onFavoriteToggle
 }: {
   weekData: WeekData
-  onCampaignClick: (campaign: Campaign) => void
+  onCampaignClick: (campaign: CampaignCardType) => void
   onFavoriteToggle: (campaignId: string, isFavorite: boolean) => void
 }) {
   const dates = getWeekDates(weekData.weekStart)
@@ -113,7 +114,7 @@ export default function ListingAttractionPlanPage() {
   const [selectedRegion, setSelectedRegion] = useState('US')
   const [regionMenuOpen, setRegionMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [favoritesCount, setFavoritesCount] = useState(0)
   const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
@@ -145,7 +146,7 @@ export default function ListingAttractionPlanPage() {
     fetchCampaigns()
   }, [fetchCampaigns])
 
-  const handleCampaignClick = (campaign: Campaign) => {
+  const handleCampaignClick = (campaign: CampaignCardType) => {
     setSelectedCampaign(campaign)
     setIsModalOpen(true)
   }
@@ -181,9 +182,10 @@ export default function ListingAttractionPlanPage() {
   const filteredWeeks = weeks.map(week => ({
     ...week,
     campaigns: week.campaigns.filter(campaign => {
+      const searchText = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery ||
-        campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        campaign.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        (campaign.name || campaign.title || '').toLowerCase().includes(searchText) ||
+        (campaign.introduction || campaign.description || '').toLowerCase().includes(searchText)
 
       const matchesCategory = categoryFilter === 'all' || campaign.category === categoryFilter
 
@@ -192,15 +194,15 @@ export default function ListingAttractionPlanPage() {
   })).filter(week => week.campaigns.length > 0)
 
   return (
-    <div className="flex min-h-screen -mx-6 -my-8 bg-background">
-      {/* Sidebar */}
-      <CampaignSidebar favoritesCount={favoritesCount} />
-
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
-          <h1 className="text-sm font-medium text-muted-foreground">Listing Attraction Plan</h1>
+        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <span className="text-sm font-medium text-muted-foreground">Listing Attraction Plan</span>
+          </div>
 
           {/* Search */}
           <div className="flex-1 max-w-md mx-8">

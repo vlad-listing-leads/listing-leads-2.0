@@ -23,7 +23,7 @@ export function TextField({ field, value, onChange, error }: TextFieldProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder || undefined}
-        error={!!error}
+        className={error ? 'border-red-500' : ''}
       />
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>

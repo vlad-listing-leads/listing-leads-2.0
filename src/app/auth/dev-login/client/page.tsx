@@ -10,7 +10,7 @@ const DEV_USER_PASSWORD = 'dev-password-12345!'
 function DevLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/designs'
+  const redirectTo = searchParams.get('redirect') || '/plan'
   const [status, setStatus] = useState('Signing in...')
 
   useEffect(() => {
