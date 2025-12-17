@@ -2,7 +2,9 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import {
   Calendar,
   Trophy,
@@ -80,20 +82,34 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ favoritesCount = 0, user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  // Avoid hydration mismatch by only showing theme-specific logo after mount
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const logoSrc = mounted && resolvedTheme === 'dark' ? '/logo-dark.svg' : '/logo.svg'
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/plan">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
+              <Link href="/plan" className="flex items-center gap-2">
+                <Image
+                  src={logoSrc}
+                  alt="Listing Leads"
+                  width={150}
+                  height={32}
+                  className="h-8 w-auto group-data-[collapsible=icon]:hidden"
+                  priority
+                />
+                {/* Collapsed state - show just icon */}
+                <div className="hidden group-data-[collapsible=icon]:flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <span className="font-bold text-sm">LL</span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Listing Leads</span>
-                  <span className="truncate text-xs text-muted-foreground">Marketing Platform</span>
                 </div>
               </Link>
             </SidebarMenuButton>
