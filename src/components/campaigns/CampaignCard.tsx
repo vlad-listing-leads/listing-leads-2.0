@@ -60,11 +60,11 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
           <img
             src={campaign.thumbnail_url}
             alt={campaign.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover scale-[0.8] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-            <div className="w-3/4 h-3/4 bg-card rounded-lg shadow-sm flex items-center justify-center border border-border">
+            <div className="w-3/4 h-3/4 bg-card rounded-lg shadow-sm flex items-center justify-center border border-border scale-[0.8] group-hover:scale-[0.9] transition-transform duration-300 ease-out">
               <span className="text-muted-foreground text-sm">Preview</span>
             </div>
           </div>
