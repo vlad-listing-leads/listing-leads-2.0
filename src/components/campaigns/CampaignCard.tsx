@@ -11,17 +11,25 @@ interface CampaignCardProps {
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
 }
 
-// Category-specific gradient backgrounds
+// Category-specific gradient backgrounds (className-based)
 const categoryGradients: Record<CampaignCategory, string> = {
-  'phone-text-scripts': 'bg-gradient-to-b from-amber-50 to-orange-100 dark:from-amber-950/40 dark:to-orange-900/30',
+  'phone-text-scripts': '', // Using custom style instead
   'email-campaigns': 'bg-gradient-to-b from-blue-50 to-indigo-100 dark:from-blue-950/40 dark:to-indigo-900/30',
   'social-shareables': 'bg-gradient-to-b from-purple-50 to-pink-100 dark:from-purple-950/40 dark:to-pink-900/30',
   'direct-mail': 'bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900',
 }
 
+// Category-specific gradient styles (for custom gradients with percentage stops)
+const categoryGradientStyles: Record<CampaignCategory, React.CSSProperties | undefined> = {
+  'phone-text-scripts': { background: 'linear-gradient(to bottom, #FFEBAF 0%, #FEF8EC 67%)' },
+  'email-campaigns': undefined,
+  'social-shareables': undefined,
+  'direct-mail': undefined,
+}
+
 // Category-specific fade colors for bottom mask
 const categoryFadeColors: Record<CampaignCategory, string> = {
-  'phone-text-scripts': 'from-transparent via-orange-100/80 to-orange-100 dark:via-orange-900/50 dark:to-orange-900/30',
+  'phone-text-scripts': 'from-transparent via-[#FEF8EC]/80 to-[#FEF8EC]',
   'email-campaigns': 'from-transparent via-indigo-100/80 to-indigo-100 dark:via-indigo-900/50 dark:to-indigo-900/30',
   'social-shareables': 'from-transparent via-pink-100/80 to-pink-100 dark:via-pink-900/50 dark:to-pink-900/30',
   'direct-mail': 'from-transparent via-slate-200/80 to-slate-200 dark:via-slate-900/50 dark:to-slate-900',
@@ -34,6 +42,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
 
   const config = categoryConfig[campaign.category]
   const gradientClass = categoryGradients[campaign.category]
+  const gradientStyle = categoryGradientStyles[campaign.category]
   const fadeClass = categoryFadeColors[campaign.category]
   const detailUrl = `/campaigns/${campaign.category}/${campaign.slug}`
 
@@ -73,6 +82,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
         'group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer',
         gradientClass
       )}
+      style={gradientStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
