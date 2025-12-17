@@ -13,6 +13,33 @@ interface MemberstackAuthProviderProps {
 // Pages that don't require auth
 const PUBLIC_PATHS = ['/login', '/register', '/api', '/auth']
 
+// Global auth lock to prevent multiple simultaneous auth attempts
+const AUTH_LOCK_KEY = 'memberstack_auth_in_progress'
+const AUTH_LOCK_TIMEOUT = 10000 // 10 seconds
+
+function isAuthLocked(): boolean {
+  if (typeof window === 'undefined') return false
+  const lockTime = sessionStorage.getItem(AUTH_LOCK_KEY)
+  if (!lockTime) return false
+  // Check if lock is still valid (within timeout)
+  const elapsed = Date.now() - parseInt(lockTime, 10)
+  if (elapsed > AUTH_LOCK_TIMEOUT) {
+    sessionStorage.removeItem(AUTH_LOCK_KEY)
+    return false
+  }
+  return true
+}
+
+function setAuthLock(): void {
+  if (typeof window === 'undefined') return
+  sessionStorage.setItem(AUTH_LOCK_KEY, Date.now().toString())
+}
+
+function clearAuthLock(): void {
+  if (typeof window === 'undefined') return
+  sessionStorage.removeItem(AUTH_LOCK_KEY)
+}
+
 export function MemberstackAuthProvider({ children }: MemberstackAuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -66,7 +93,7 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
       return
     }
 
-    // Prevent double auth attempts
+    // Prevent double auth attempts (component level)
     if (authAttempted.current) return
     authAttempted.current = true
 
@@ -77,8 +104,37 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
+        clearAuthLock() // Clear any stale lock
         setIsAuthenticated(true)
         setIsLoading(false)
+        return
+      }
+
+      // Check global auth lock to prevent multiple simultaneous auth attempts
+      if (isAuthLocked()) {
+        // Another auth attempt is in progress, wait for it
+        const waitForAuth = (): Promise<void> => {
+          return new Promise((resolve) => {
+            const checkInterval = setInterval(async () => {
+              if (!isAuthLocked()) {
+                clearInterval(checkInterval)
+                // Re-check if we're now authenticated
+                const { data: { user: newUser } } = await supabase.auth.getUser()
+                if (newUser) {
+                  setIsAuthenticated(true)
+                  setIsLoading(false)
+                }
+                resolve()
+              }
+            }, 200)
+            // Timeout after 10 seconds
+            setTimeout(() => {
+              clearInterval(checkInterval)
+              resolve()
+            }, AUTH_LOCK_TIMEOUT)
+          })
+        }
+        await waitForAuth()
         return
       }
 
@@ -118,8 +174,15 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
         const { data: member } = await memberstack.getCurrentMember()
 
         if (member) {
+          // Set lock before starting auth
+          setAuthLock()
+
           // User is logged into Memberstack - auto-create Supabase session
           const success = await authenticateWithMemberstack(member)
+
+          // Clear lock after auth attempt
+          clearAuthLock()
+
           if (success) {
             setIsAuthenticated(true)
             setIsLoading(false)
@@ -133,6 +196,7 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
         window.location.href = MEMBERSTACK_LOGIN_URL
       } catch (err) {
         console.error('Error checking Memberstack:', err)
+        clearAuthLock()
         window.location.href = MEMBERSTACK_LOGIN_URL
       }
     }
