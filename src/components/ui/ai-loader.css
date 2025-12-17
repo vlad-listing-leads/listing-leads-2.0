@@ -1,0 +1,100 @@
+.loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-family: "Inter", sans-serif;
+  user-select: none;
+}
+
+.loader-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.claude-logo {
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes logo-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Glow effect behind logo */
+.loader-logo::before {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(217, 119, 87, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.loader-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.loader-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  font-weight: 400;
+  color: white;
+  letter-spacing: 0.05em;
+  min-height: 1.5em;
+}
+
+.loader-subtitle {
+  font-size: 0.8em;
+  font-weight: 400;
+  color: #f5d5d5;
+  opacity: 0.8;
+  letter-spacing: 0.02em;
+}
+
+.loader-letter {
+  display: inline-block;
+  opacity: 0.4;
+  animation: loader-letter-anim 2s infinite;
+}
+
+@keyframes loader-letter-anim {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  40% {
+    opacity: 0.6;
+    transform: translateY(0);
+  }
+}
