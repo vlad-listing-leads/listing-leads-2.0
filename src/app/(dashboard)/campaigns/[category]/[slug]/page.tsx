@@ -50,7 +50,7 @@ export default function CampaignDetailPage() {
   useEffect(() => {
     async function fetchCampaign() {
       try {
-        const response = await fetch(`/api/campaigns/${category}/${slug}`)
+        const response = await fetch(`/api/campaign/${category}/${slug}`)
         const data = await response.json()
 
         if (data.campaign) {
