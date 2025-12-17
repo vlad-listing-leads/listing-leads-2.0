@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Share2, Video, Image } from 'lucide-react'
-import { CampaignCard, CampaignPreviewModal, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
+import { CampaignCard, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 import { cn } from '@/lib/utils'
 
@@ -11,8 +11,6 @@ type ContentFilter = 'all' | 'video' | 'static'
 export default function SocialShareablesPage() {
   const [campaigns, setCampaigns] = useState<(CampaignCardType & { is_video?: boolean })[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFeatured, setShowFeatured] = useState(false)
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all')
@@ -52,18 +50,10 @@ export default function SocialShareablesPage() {
     })
   }, [campaigns, searchQuery, showFeatured, contentFilter])
 
-  const handleCampaignClick = (campaign: CampaignCardType) => {
-    setSelectedCampaign(campaign)
-    setIsModalOpen(true)
-  }
-
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
       prev.map(c => c.id === campaignId ? { ...c, isFavorite } : c)
     )
-    if (selectedCampaign?.id === campaignId) {
-      setSelectedCampaign(prev => prev ? { ...prev, isFavorite } : null)
-    }
   }
 
   const videoCount = campaigns.filter(c => c.is_video).length
@@ -164,24 +154,12 @@ export default function SocialShareablesPage() {
               <CampaignCard
                 key={campaign.id}
                 campaign={campaign}
-                onClick={handleCampaignClick}
                 onFavoriteToggle={handleFavoriteToggle}
               />
             ))}
           </div>
         )}
       </main>
-
-      {/* Preview Modal */}
-      <CampaignPreviewModal
-        campaign={selectedCampaign}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedCampaign(null)
-        }}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
     </div>
   )
 }

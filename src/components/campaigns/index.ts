@@ -1,6 +1,5 @@
 export { AppSidebar } from './AppSidebar'
 export { CampaignCard } from './CampaignCard'
 export { CampaignCardSkeleton, CampaignGridSkeleton } from './CampaignCardSkeleton'
-export { CampaignPreviewModal } from './CampaignPreviewModal'
 export { CampaignFilters } from './CampaignFilters'
 export { GlobalSearch } from './GlobalSearch'

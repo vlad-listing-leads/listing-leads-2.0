@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Heart, Calendar, Trash2 } from 'lucide-react'
+import { Heart, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
+import { CampaignCard } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
 interface FavoriteItem {
@@ -16,8 +16,6 @@ interface FavoriteItem {
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
 
   const fetchFavorites = async () => {
@@ -40,21 +38,10 @@ export default function FavoritesPage() {
     fetchFavorites()
   }, [])
 
-  const handleCampaignClick = (campaign: CampaignCardType) => {
-    setSelectedCampaign({ ...campaign, isFavorite: true })
-    setIsModalOpen(true)
-  }
-
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     if (!isFavorite) {
       // Remove from favorites list
       setFavorites(prev => prev.filter(f => f.campaign_id !== campaignId))
-    }
-
-    // Close modal if the unfavorited item was selected
-    if (selectedCampaign?.id === campaignId && !isFavorite) {
-      setIsModalOpen(false)
-      setSelectedCampaign(null)
     }
   }
 
@@ -188,7 +175,6 @@ export default function FavoritesPage() {
                     <CampaignCard
                       key={fav.id}
                       campaign={{ ...fav.weekly_campaigns, isFavorite: true }}
-                      onClick={handleCampaignClick}
                       onFavoriteToggle={handleFavoriteToggle}
                     />
                   ))}
@@ -198,17 +184,6 @@ export default function FavoritesPage() {
           </div>
         )}
       </main>
-
-      {/* Preview Modal */}
-      <CampaignPreviewModal
-        campaign={selectedCampaign}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedCampaign(null)
-        }}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
     </div>
   )
 }

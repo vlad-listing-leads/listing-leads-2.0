@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { FileBox } from 'lucide-react'
-import { CampaignCard, CampaignPreviewModal, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
+import { CampaignCard, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 
 export default function DirectMailPage() {
   const [campaigns, setCampaigns] = useState<CampaignCardType[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFeatured, setShowFeatured] = useState(false)
 
@@ -43,18 +41,10 @@ export default function DirectMailPage() {
     })
   }, [campaigns, searchQuery, showFeatured])
 
-  const handleCampaignClick = (campaign: CampaignCardType) => {
-    setSelectedCampaign(campaign)
-    setIsModalOpen(true)
-  }
-
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
       prev.map(c => c.id === campaignId ? { ...c, isFavorite } : c)
     )
-    if (selectedCampaign?.id === campaignId) {
-      setSelectedCampaign(prev => prev ? { ...prev, isFavorite } : null)
-    }
   }
 
   return (
@@ -111,24 +101,12 @@ export default function DirectMailPage() {
               <CampaignCard
                 key={campaign.id}
                 campaign={campaign}
-                onClick={handleCampaignClick}
                 onFavoriteToggle={handleFavoriteToggle}
               />
             ))}
           </div>
         )}
       </main>
-
-      {/* Preview Modal */}
-      <CampaignPreviewModal
-        campaign={selectedCampaign}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedCampaign(null)
-        }}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
@@ -8,7 +9,6 @@ import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } fr
 interface CampaignCardProps {
   campaign: CampaignCardType
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
-  onClick?: (campaign: CampaignCardType) => void
 }
 
 // Category-specific gradient backgrounds
@@ -27,7 +27,7 @@ const categoryFadeColors: Record<CampaignCategory, string> = {
   'direct-mail': 'from-transparent via-slate-200/80 to-slate-200 dark:via-slate-900/50 dark:to-slate-900',
 }
 
-export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCardProps) {
+export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorite, setIsFavorite] = useState(campaign.isFavorite || false)
   const [isLoading, setIsLoading] = useState(false)
@@ -35,6 +35,7 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
   const config = categoryConfig[campaign.category]
   const gradientClass = categoryGradients[campaign.category]
   const fadeClass = categoryFadeColors[campaign.category]
+  const detailUrl = `/campaigns/${campaign.category}/${campaign.slug}`
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -66,14 +67,14 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
   }
 
   return (
-    <div
+    <Link
+      href={detailUrl}
       className={cn(
-        'group rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer',
+        'group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer',
         gradientClass
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onClick?.(campaign)}
     >
       {/* Thumbnail */}
       <div className="aspect-[4/3] relative overflow-hidden">
@@ -123,6 +124,6 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
           {campaign.name || campaign.title}
         </h4>
       </div>
-    </div>
+    </Link>
   )
 }

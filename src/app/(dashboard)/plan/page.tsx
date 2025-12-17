@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
+import { CampaignCard } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType, WeekData, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
 // Region options
@@ -51,11 +51,9 @@ const formatWeekRange = (startDateStr: string) => {
 // Week Section Component
 function WeekSection({
   weekData,
-  onCampaignClick,
   onFavoriteToggle
 }: {
   weekData: WeekData
-  onCampaignClick: (campaign: CampaignCardType) => void
   onFavoriteToggle: (campaignId: string, isFavorite: boolean) => void
 }) {
   const dates = getWeekDates(weekData.weekStart)
@@ -95,7 +93,6 @@ function WeekSection({
                   <CampaignCard
                     key={campaign.id}
                     campaign={campaign}
-                    onClick={onCampaignClick}
                     onFavoriteToggle={onFavoriteToggle}
                   />
                 ))}
@@ -113,8 +110,6 @@ export default function ListingAttractionPlanPage() {
   const [selectedRegion, setSelectedRegion] = useState('US')
   const [regionMenuOpen, setRegionMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCampaign, setSelectedCampaign] = useState<CampaignCardType | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [favoritesCount, setFavoritesCount] = useState(0)
   const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
 
@@ -145,11 +140,6 @@ export default function ListingAttractionPlanPage() {
     fetchCampaigns()
   }, [fetchCampaigns])
 
-  const handleCampaignClick = (campaign: CampaignCardType) => {
-    setSelectedCampaign(campaign)
-    setIsModalOpen(true)
-  }
-
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     // Update local state
     setWeeks(prevWeeks =>
@@ -163,11 +153,6 @@ export default function ListingAttractionPlanPage() {
 
     // Update count
     setFavoritesCount(prev => isFavorite ? prev + 1 : prev - 1)
-
-    // Update selected campaign if open
-    if (selectedCampaign?.id === campaignId) {
-      setSelectedCampaign(prev => prev ? { ...prev, isFavorite } : null)
-    }
   }
 
   const handleRegionChange = (regionCode: string) => {
@@ -300,27 +285,15 @@ export default function ListingAttractionPlanPage() {
             </div>
           ) : (
             /* Week Sections */
-            filteredWeeks.map((week, index) => (
+            filteredWeeks.map((week) => (
               <WeekSection
                 key={week.weekStart}
                 weekData={week}
-                onCampaignClick={handleCampaignClick}
                 onFavoriteToggle={handleFavoriteToggle}
               />
             ))
           )}
       </main>
-
-      {/* Preview Modal */}
-      <CampaignPreviewModal
-        campaign={selectedCampaign}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setSelectedCampaign(null)
-        }}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
     </div>
   )
 }
