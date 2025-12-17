@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Search, Heart, HelpCircle, User, ChevronDown } from 'lucide-react'
+import { Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignCard, CampaignPreviewModal } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType, WeekData, categoryConfig, CampaignCategory } from '@/types/campaigns'
-import { SidebarTrigger } from '@/components/ui/sidebar'
 
 // Region options
 const regions = [
@@ -194,51 +193,9 @@ export default function ListingAttractionPlanPage() {
   })).filter(week => week.campaigns.length > 0)
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-4 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <span className="text-sm font-medium text-muted-foreground">Listing Attraction Plan</span>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search campaigns..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-muted border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Right icons */}
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors relative">
-              <Heart className="w-5 h-5" />
-              {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {favoritesCount}
-                </span>
-              )}
-            </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-              <HelpCircle className="w-5 h-5" />
-            </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-              <User className="w-5 h-5" />
-            </button>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
+    <div className="flex flex-col h-full bg-background">
+      {/* Page Content */}
+      <main className="flex-1 p-8 overflow-y-auto">
           {/* Page Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -352,8 +309,7 @@ export default function ListingAttractionPlanPage() {
               />
             ))
           )}
-        </main>
-      </div>
+      </main>
 
       {/* Preview Modal */}
       <CampaignPreviewModal
