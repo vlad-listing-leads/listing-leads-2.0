@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Share2, Video, Image } from 'lucide-react'
-import { CampaignCard, CampaignPreviewModal, CampaignFilters } from '@/components/campaigns'
+import { CampaignCard, CampaignPreviewModal, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 import { cn } from '@/lib/utils'
 
@@ -142,12 +142,7 @@ export default function SocialShareablesPage() {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading content...</p>
-            </div>
-          </div>
+          <CampaignGridSkeleton count={8} />
         ) : filteredCampaigns.length === 0 ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
