@@ -22,7 +22,9 @@ export default function DashboardLayout({
         </header>
         {/* Page Content */}
         <div className="flex-1 overflow-hidden">
-          {children}
+          <div className="w-full max-w-[100rem] mx-auto h-full">
+            {children}
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
