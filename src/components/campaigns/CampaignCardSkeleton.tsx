@@ -2,22 +2,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export function CampaignCardSkeleton() {
   return (
-    <div className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
+    <div className="rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 to-muted">
       {/* Thumbnail skeleton */}
-      <Skeleton className="aspect-[4/3] rounded-none" />
+      <div className="aspect-[4/3] relative">
+        <Skeleton className="absolute inset-0 rounded-none" />
+      </div>
 
       {/* Content skeleton */}
-      <div className="p-3">
+      <div className="px-4 pb-4 pt-1">
         {/* Category badge */}
-        <Skeleton className="h-5 w-24 rounded-full" />
+        <Skeleton className="h-6 w-28 rounded-full" />
 
         {/* Title */}
         <Skeleton className="mt-2 h-4 w-full" />
         <Skeleton className="mt-1 h-4 w-3/4" />
-
-        {/* Description */}
-        <Skeleton className="mt-2 h-3 w-full" />
-        <Skeleton className="mt-1 h-3 w-2/3" />
       </div>
     </div>
   )

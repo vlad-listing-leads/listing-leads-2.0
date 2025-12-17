@@ -1,14 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, ExternalLink, Copy, Check } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignCard as CampaignCardType, categoryConfig } from '@/types/campaigns'
+import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
 interface CampaignCardProps {
   campaign: CampaignCardType
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
   onClick?: (campaign: CampaignCardType) => void
+}
+
+// Category-specific gradient backgrounds
+const categoryGradients: Record<CampaignCategory, string> = {
+  'phone-text-scripts': 'bg-gradient-to-b from-amber-50 to-orange-100 dark:from-amber-950/40 dark:to-orange-900/30',
+  'email-campaigns': 'bg-gradient-to-b from-blue-50 to-indigo-100 dark:from-blue-950/40 dark:to-indigo-900/30',
+  'social-shareables': 'bg-gradient-to-b from-purple-50 to-pink-100 dark:from-purple-950/40 dark:to-pink-900/30',
+  'direct-mail': 'bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900',
+}
+
+// Category-specific fade colors for bottom mask
+const categoryFadeColors: Record<CampaignCategory, string> = {
+  'phone-text-scripts': 'from-transparent via-orange-100/80 to-orange-100 dark:via-orange-900/50 dark:to-orange-900/30',
+  'email-campaigns': 'from-transparent via-indigo-100/80 to-indigo-100 dark:via-indigo-900/50 dark:to-indigo-900/30',
+  'social-shareables': 'from-transparent via-pink-100/80 to-pink-100 dark:via-pink-900/50 dark:to-pink-900/30',
+  'direct-mail': 'from-transparent via-slate-200/80 to-slate-200 dark:via-slate-900/50 dark:to-slate-900',
 }
 
 export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCardProps) {
@@ -17,6 +33,8 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
   const [isLoading, setIsLoading] = useState(false)
 
   const config = categoryConfig[campaign.category]
+  const gradientClass = categoryGradients[campaign.category]
+  const fadeClass = categoryFadeColors[campaign.category]
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -49,22 +67,29 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
 
   return (
     <div
-      className="group bg-card rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-md hover:border-border/80 transition-all cursor-pointer"
+      className={cn(
+        'group rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer',
+        gradientClass
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onClick?.(campaign)}
     >
       {/* Thumbnail */}
-      <div className="aspect-[4/3] relative bg-muted overflow-hidden">
+      <div className="aspect-[4/3] relative overflow-hidden">
         {campaign.thumbnail_url ? (
-          <img
-            src={campaign.thumbnail_url}
-            alt={campaign.name}
-            className="absolute inset-x-0 bottom-0 w-full h-full object-cover object-bottom scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out origin-bottom"
-          />
+          <>
+            <img
+              src={campaign.thumbnail_url}
+              alt={campaign.name}
+              className="absolute inset-0 w-full h-full object-contain object-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
+            />
+            {/* Bottom fade mask */}
+            <div className={cn('absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b pointer-events-none', fadeClass)} />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-end justify-center pb-2">
-            <div className="w-3/4 h-3/4 bg-card rounded-lg shadow-sm flex items-center justify-center border border-border scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out origin-bottom">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-3/4 h-3/4 bg-white/50 dark:bg-black/20 rounded-lg flex items-center justify-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out">
               <span className="text-muted-foreground text-sm">Preview</span>
             </div>
           </div>
@@ -75,10 +100,10 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
           onClick={handleFavoriteClick}
           disabled={isLoading}
           className={cn(
-            'absolute top-2 right-2 p-1.5 rounded-full transition-all',
+            'absolute top-2 right-2 p-1.5 rounded-full transition-all z-10',
             isFavorite
               ? 'bg-red-500 text-white'
-              : 'bg-background/80 text-muted-foreground hover:bg-background hover:text-foreground',
+              : 'bg-white/80 dark:bg-black/50 text-muted-foreground hover:bg-white hover:text-foreground',
             isHovered || isFavorite ? 'opacity-100' : 'opacity-0'
           )}
         >
@@ -87,18 +112,16 @@ export function CampaignCard({ campaign, onFavoriteToggle, onClick }: CampaignCa
       </div>
 
       {/* Content */}
-      <div className="p-3">
-        <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', config.color, config.darkColor)}>
+      <div className="px-4 pb-4 pt-1">
+        <span className={cn(
+          'inline-block text-xs font-medium px-3 py-1 rounded-full',
+          'bg-white dark:bg-black/30 text-foreground shadow-sm'
+        )}>
           {config.label}
         </span>
         <h4 className="mt-2 text-sm font-medium text-foreground line-clamp-2">
           {campaign.name || campaign.title}
         </h4>
-        {(campaign.introduction || campaign.description) && (
-          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-            {(campaign.introduction || campaign.description || '').replace(/<[^>]*>/g, '')}
-          </p>
-        )}
       </div>
     </div>
   )
