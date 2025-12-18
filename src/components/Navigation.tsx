@@ -201,12 +201,12 @@ export function Navigation() {
                 />
                 <div className="absolute right-0 top-full mt-2 z-20 rounded-lg shadow-xl overflow-hidden min-w-[160px] border border-border bg-card">
                   <Link
-                    href="/account"
+                    href="/profile"
                     onClick={() => setUserMenuOpen(false)}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-sm transition-colors text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
                     <User className="w-4 h-4" />
-                    Account
+                    Profile
                   </Link>
                   <button
                     onClick={handleThemeToggle}
@@ -297,12 +297,12 @@ export function Navigation() {
             </div>
             <div className="space-y-1">
               <Link
-                href="/account"
+                href="/profile"
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <User className="w-4 h-4" />
-                Account
+                Profile
               </Link>
               <button
                 onClick={handleThemeToggle}

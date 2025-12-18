@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { FileBox } from 'lucide-react'
+import { FileBox, Mail, FileText } from 'lucide-react'
 import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
+import { cn } from '@/lib/utils'
+
+type MailType = 'all' | 'postcard' | 'letter'
 
 export default function DirectMailPage() {
-  const [campaigns, setCampaigns] = useState<CampaignCardType[]>([])
+  const [campaigns, setCampaigns] = useState<(CampaignCardType & { mail_type?: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFeatured, setShowFeatured] = useState(false)
+  const [mailType, setMailType] = useState<MailType>('all')
 
   useEffect(() => {
     async function fetchCampaigns() {
@@ -28,6 +32,9 @@ export default function DirectMailPage() {
     fetchCampaigns()
   }, [])
 
+  const postcardCount = campaigns.filter(c => c.mail_type === 'postcard').length
+  const letterCount = campaigns.filter(c => c.mail_type === 'letter').length
+
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
       const searchText = searchQuery.toLowerCase()
@@ -37,9 +44,14 @@ export default function DirectMailPage() {
 
       const matchesFeatured = !showFeatured || campaign.is_featured
 
-      return matchesSearch && matchesFeatured
+      const matchesType =
+        mailType === 'all' ||
+        (mailType === 'postcard' && campaign.mail_type === 'postcard') ||
+        (mailType === 'letter' && campaign.mail_type === 'letter')
+
+      return matchesSearch && matchesFeatured && matchesType
     })
-  }, [campaigns, searchQuery, showFeatured])
+  }, [campaigns, searchQuery, showFeatured, mailType])
 
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
@@ -63,6 +75,47 @@ export default function DirectMailPage() {
             High-converting postcard and letter designs to reach homeowners in your farm area.
           </p>
         </div>
+
+        {/* Category Tabs */}
+        {!isLoading && campaigns.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setMailType('all')}
+              className={cn(
+                'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                mailType === 'all'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              All ({campaigns.length})
+            </button>
+            <button
+              onClick={() => setMailType('postcard')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                mailType === 'postcard'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Mail className="w-4 h-4" />
+              Postcards ({postcardCount})
+            </button>
+            <button
+              onClick={() => setMailType('letter')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                mailType === 'letter'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              Letters ({letterCount})
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         {!isLoading && campaigns.length > 0 && (

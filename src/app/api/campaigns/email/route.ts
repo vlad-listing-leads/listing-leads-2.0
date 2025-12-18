@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       .from('email_campaigns')
       .select('*')
       .eq('is_active', true)
-      .or(`region.eq.${region},region.eq.US`)
+      .in('region', [region, 'US,CA'])
       .order('display_order', { ascending: true })
 
     if (error) {

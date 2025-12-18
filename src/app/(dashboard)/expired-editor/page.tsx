@@ -7,13 +7,13 @@ import { Template, Campaign } from '@/types'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { LayoutTemplate, Search, Eye, X } from 'lucide-react'
+import { FileEdit, Search, Eye, X } from 'lucide-react'
 
 interface TemplateWithCampaign extends Template {
   campaign?: { id: string; name: string; color: string } | null
 }
 
-export default function DesignsPage() {
+export default function ExpiredEditorPage() {
   const [templates, setTemplates] = useState<TemplateWithCampaign[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -76,13 +76,13 @@ export default function DesignsPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <LayoutTemplate className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <FileEdit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Designs</h1>
+            <h1 className="text-3xl font-bold text-foreground">Expired Editor</h1>
           </div>
           <p className="text-muted-foreground">
-            Select a design to personalize and generate your prompt
+            Select a design to customize for your expired listings
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export default function DesignsPage() {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search..."
+            placeholder="Search designs..."
             className="pl-9 h-9 text-sm"
           />
         </div>
@@ -140,7 +140,7 @@ export default function DesignsPage() {
         <div className="text-center py-12 sm:py-16 bg-card rounded-2xl border border-border">
           {templates.length === 0 ? (
             <>
-              <LayoutTemplate className="w-10 sm:w-12 h-10 sm:h-12 text-muted-foreground mx-auto mb-4" />
+              <FileEdit className="w-10 sm:w-12 h-10 sm:h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground px-4">No designs available yet</p>
             </>
           ) : (
@@ -208,7 +208,8 @@ export default function DesignsPage() {
 
                 <Link href={`/templates/${template.id}/customize`} className="block">
                   <Button className="w-full">
-                    Personalize
+                    <FileEdit className="w-4 h-4 mr-2" />
+                    Customize
                   </Button>
                 </Link>
               </div>
@@ -274,7 +275,8 @@ export default function DesignsPage() {
             <div className="px-5 py-4 border-t border-border">
               <Link href={`/templates/${previewTemplate.id}/customize`} className="block">
                 <Button className="w-full">
-                  Personalize This Design
+                  <FileEdit className="w-4 h-4 mr-2" />
+                  Customize This Design
                 </Button>
               </Link>
             </div>

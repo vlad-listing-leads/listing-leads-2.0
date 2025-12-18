@@ -21,10 +21,9 @@ const fields: FieldConfig[] = [
   { name: 'example_image_url', label: 'Example Image', type: 'image', folder: 'campaigns/Text & Voice' },
   { name: 'full_script_image_url', label: 'Full Script Image', type: 'image', folder: 'campaigns/Text & Voice' },
   { name: 'region', label: 'Region', type: 'button-select', options: [
-    { value: 'US', label: 'United States' },
-    { value: 'CA', label: 'Canada' },
-    { value: 'UK', label: 'United Kingdom' },
-    { value: 'AU', label: 'Australia' },
+    { value: 'US', label: '🇺🇸 US' },
+    { value: 'CA', label: '🇨🇦 CA' },
+    { value: 'US,CA', label: '🌎 Both' },
   ]},
 ]
 

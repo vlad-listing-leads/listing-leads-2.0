@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon, Check, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -17,7 +16,7 @@ import { cn } from '@/lib/utils'
 export interface FieldConfig {
   name: string
   label: string
-  type: 'text' | 'textarea' | 'url' | 'date' | 'number' | 'select' | 'switch' | 'json' | 'image' | 'button-select' | 'slug' | 'html'
+  type: 'text' | 'textarea' | 'url' | 'date' | 'number' | 'select' | 'switch' | 'json' | 'image' | 'button-select' | 'slug' | 'html' | 'richtext'
   placeholder?: string
   required?: boolean
   options?: { value: string; label: string }[]
@@ -48,6 +47,7 @@ export function CampaignEditor({
   const [error, setError] = useState<string | null>(null)
   const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({})
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
+  const [previewMode, setPreviewMode] = useState<Record<string, boolean>>({})
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const slugCheckTimeout = useRef<NodeJS.Timeout | null>(null)
 
@@ -466,17 +466,55 @@ export function CampaignEditor({
                 />
               )}
 
+              {field.type === 'richtext' && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={!previewMode[field.name] ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreviewMode(prev => ({ ...prev, [field.name]: false }))}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={previewMode[field.name] ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreviewMode(prev => ({ ...prev, [field.name]: true }))}
+                    >
+                      Preview
+                    </Button>
+                  </div>
+                  {previewMode[field.name] ? (
+                    <div
+                      className="min-h-[100px] p-3 rounded-md border border-border bg-muted/30 prose prose-sm max-w-none dark:prose-invert"
+                      dangerouslySetInnerHTML={{ __html: formData[field.name] || '<p class="text-muted-foreground">No content</p>' }}
+                    />
+                  ) : (
+                    <Textarea
+                      id={field.name}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => handleChange(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                      rows={field.rows || 6}
+                      className="font-mono text-sm"
+                    />
+                  )}
+                </div>
+              )}
+
               {field.type === 'image' && (
                 <div className="space-y-3">
                   {/* Current image preview */}
                   {formData[field.name] && (
                     <div className="relative inline-block">
                       <div className="relative w-48 h-32 rounded-lg overflow-hidden border border-border">
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                           src={formData[field.name]}
                           alt="Preview"
-                          fill
-                          className="object-cover"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
                       </div>
                       <button

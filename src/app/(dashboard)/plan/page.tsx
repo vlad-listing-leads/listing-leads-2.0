@@ -1,18 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignCard } from '@/components/campaigns'
 import { WeekData } from '@/types/campaigns'
-
-// Region options - using flag-icons CSS classes
-const regions = [
-  { code: 'US', flagClass: 'fi fi-us', name: 'United States' },
-  { code: 'CA', flagClass: 'fi fi-ca', name: 'Canada' },
-  { code: 'UK', flagClass: 'fi fi-gb', name: 'United Kingdom' },
-  { code: 'AU', flagClass: 'fi fi-au', name: 'Australia' },
-]
+import { createClient } from '@/lib/supabase/client'
 
 // Get week dates helper
 const getWeekDates = (startDateStr: string) => {
@@ -61,17 +54,20 @@ function WeekSection({
   return (
     <div>
       {/* Days Grid */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-3">
         {dates.map((day, index) => (
-          <div key={day.dayName} className="min-w-0">
+          <div
+            key={day.dayName}
+            className="min-w-0 bg-muted/50 rounded-xl p-4 flex flex-col"
+          >
             {/* Day Header */}
-            <div className="mb-3 pb-2 border-b border-border">
+            <div className="mb-3">
               <p className="text-sm font-medium text-foreground">{day.dayName}</p>
               <p className="text-xs text-muted-foreground">{day.month} {day.date}</p>
             </div>
 
             {/* Campaign Cards for this day */}
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               {weekData.campaigns
                 .filter(campaign => campaign.day_of_week === index)
                 .map(campaign => (
@@ -92,15 +88,38 @@ function WeekSection({
 export default function ListingAttractionPlanPage() {
   const [weeks, setWeeks] = useState<WeekData[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedRegion, setSelectedRegion] = useState('US')
-  const [regionMenuOpen, setRegionMenuOpen] = useState(false)
+  const [userRegion, setUserRegion] = useState<string | null>(null)
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0)
 
-  // Fetch campaigns
+  // Fetch user's region from profile
+  useEffect(() => {
+    async function fetchUserRegion() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('region')
+          .eq('id', user.id)
+          .single()
+
+        setUserRegion(profile?.region || 'US')
+      } else {
+        setUserRegion('US')
+      }
+    }
+
+    fetchUserRegion()
+  }, [])
+
+  // Fetch campaigns once we have the user's region
   const fetchCampaigns = useCallback(async () => {
+    if (!userRegion) return
+
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/campaigns/weekly?region=${selectedRegion}&weeks=8`)
+      const response = await fetch(`/api/campaigns/weekly?region=${userRegion}&weeks=8`)
       const data = await response.json()
 
       if (data.weeks) {
@@ -115,7 +134,7 @@ export default function ListingAttractionPlanPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedRegion])
+  }, [userRegion])
 
   useEffect(() => {
     fetchCampaigns()
@@ -132,13 +151,6 @@ export default function ListingAttractionPlanPage() {
       }))
     )
   }
-
-  const handleRegionChange = (regionCode: string) => {
-    setSelectedRegion(regionCode)
-    setRegionMenuOpen(false)
-  }
-
-  const currentRegion = regions.find(r => r.code === selectedRegion) || regions[0]
 
   // Get current week data
   const currentWeek = weeks[currentWeekIndex]
@@ -178,54 +190,11 @@ export default function ListingAttractionPlanPage() {
       {/* Page Content */}
       <main className="flex-1 p-8">
           {/* Page Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Listing Attraction Plan</h1>
-              <p className="text-muted-foreground">
-                Here's your weekly marketing plan to help you get listings now and build your pipeline for the future.
-              </p>
-            </div>
-
-            {/* Region Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setRegionMenuOpen(!regionMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-              >
-                <span className={cn(currentRegion.flagClass, "text-base rounded-[4px]")} />
-                <span className="text-sm font-medium text-foreground">{currentRegion.code}</span>
-                <ChevronDown className={cn(
-                  "w-4 h-4 text-muted-foreground transition-transform",
-                  regionMenuOpen && "rotate-180"
-                )} />
-              </button>
-
-              {regionMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setRegionMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 z-20 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[160px]">
-                    {regions.map(region => (
-                      <button
-                        key={region.code}
-                        onClick={() => handleRegionChange(region.code)}
-                        className={cn(
-                          'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors',
-                          region.code === selectedRegion
-                            ? 'bg-accent text-accent-foreground'
-                            : 'text-foreground hover:bg-accent/50'
-                        )}
-                      >
-                        <span className={cn(region.flagClass, "text-base rounded-[4px]")} />
-                        <span>{region.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Listing Attraction Plan</h1>
+            <p className="text-muted-foreground">
+              Here's your weekly marketing plan to help you get listings now and build your pipeline for the future.
+            </p>
           </div>
 
           {/* Week Navigation */}

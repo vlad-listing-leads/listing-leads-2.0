@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Phone } from 'lucide-react'
+import { Phone, MessageSquare } from 'lucide-react'
 import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
+import { cn } from '@/lib/utils'
+
+type ScriptType = 'all' | 'voice' | 'text'
 
 export default function PhoneTextScriptsPage() {
-  const [campaigns, setCampaigns] = useState<CampaignCardType[]>([])
+  const [campaigns, setCampaigns] = useState<(CampaignCardType & { script_type?: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFeatured, setShowFeatured] = useState(false)
+  const [scriptType, setScriptType] = useState<ScriptType>('all')
 
   useEffect(() => {
     async function fetchCampaigns() {
@@ -28,6 +32,9 @@ export default function PhoneTextScriptsPage() {
     fetchCampaigns()
   }, [])
 
+  const voiceCount = campaigns.filter(c => c.script_type === 'voice').length
+  const textCount = campaigns.filter(c => c.script_type === 'text').length
+
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
       const searchText = searchQuery.toLowerCase()
@@ -37,9 +44,14 @@ export default function PhoneTextScriptsPage() {
 
       const matchesFeatured = !showFeatured || campaign.is_featured
 
-      return matchesSearch && matchesFeatured
+      const matchesType =
+        scriptType === 'all' ||
+        (scriptType === 'voice' && campaign.script_type === 'voice') ||
+        (scriptType === 'text' && campaign.script_type === 'text')
+
+      return matchesSearch && matchesFeatured && matchesType
     })
-  }, [campaigns, searchQuery, showFeatured])
+  }, [campaigns, searchQuery, showFeatured, scriptType])
 
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
@@ -53,16 +65,59 @@ export default function PhoneTextScriptsPage() {
       <main className="flex-1 p-8 overflow-y-auto">
         {/* Page Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">Voice Call & Text Scripts</h1>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Text Scripts</h1>
           </div>
           <p className="text-muted-foreground">
-            Ready-to-use phone and text message scripts to connect with leads and clients.
+            Ready-to-use voice call and text message scripts to connect with leads and clients.
           </p>
         </div>
+
+        {/* Category Tabs */}
+        {!isLoading && campaigns.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setScriptType('all')}
+              className={cn(
+                'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                scriptType === 'all'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              All ({campaigns.length})
+            </button>
+            <button
+              onClick={() => setScriptType('voice')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                scriptType === 'voice'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Phone className="w-4 h-4" />
+              Voice Call ({voiceCount})
+            </button>
+            <button
+              onClick={() => setScriptType('text')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                scriptType === 'text'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Text ({textCount})
+            </button>
+          </div>
+        )}
 
         {/* Filters */}
         {!isLoading && campaigns.length > 0 && (

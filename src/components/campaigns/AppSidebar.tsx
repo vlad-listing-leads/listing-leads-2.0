@@ -20,16 +20,11 @@ import {
   Instagram,
   Youtube,
   Heart,
-  ChevronDown,
-  Settings,
-  LogOut,
-  Shield,
 } from 'lucide-react'
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -40,14 +35,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 // Menu items
 const mainNavItems = [
@@ -60,7 +47,7 @@ const mainNavItems = [
 ]
 
 const campaignItems = [
-  { icon: Phone, label: 'Phone & Text Scripts', href: '/campaigns/phone-text-scripts' },
+  { icon: Phone, label: 'Voice Call & Text Scripts', href: '/campaigns/phone-text-scripts' },
   { icon: Mail, label: 'Email Campaigns', href: '/campaigns/email' },
   { icon: FileBox, label: 'Direct Mail Templates', href: '/campaigns/direct-mail' },
   { icon: Share2, label: 'Social Shareables', href: '/campaigns/social' },
@@ -74,15 +61,9 @@ const socialItems = [
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   favoritesCount?: number
-  user?: {
-    name: string
-    email: string
-    avatar?: string
-  }
-  isAdmin?: boolean
 }
 
-export function AppSidebar({ favoritesCount = 0, user, isAdmin = false, ...props }: AppSidebarProps) {
+export function AppSidebar({ favoritesCount = 0, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
@@ -206,60 +187,6 @@ export function AppSidebar({ favoritesCount = 0, user, isAdmin = false, ...props
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
-                      {user?.name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name || 'User'}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {user?.email || 'user@example.com'}
-                    </span>
-                  </div>
-                  <ChevronDown className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuItem asChild>
-                  <Link href="/account">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Account Settings
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin Panel
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>

@@ -129,8 +129,8 @@ export async function GET(request: NextRequest) {
       }
 
       for (const campaign of campaigns) {
-        // Filter by region
-        if (campaign.region !== region && campaign.region !== 'US') continue
+        // Filter by region (include campaigns for selected region or "Both" regions)
+        if (campaign.region !== region && campaign.region !== 'US,CA') continue
 
         campaignMap[campaign.id] = {
           id: campaign.id,

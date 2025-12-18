@@ -11,7 +11,8 @@ import {
   FileBox,
   Users,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  Megaphone
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AdminGuard } from '@/components/admin/AdminGuard'
@@ -19,6 +20,7 @@ import { AdminGuard } from '@/components/admin/AdminGuard'
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
+  { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
   { name: 'Email Campaigns', href: '/admin/campaigns/email', icon: Mail },
   { name: 'Phone/Text Scripts', href: '/admin/campaigns/phone-text-scripts', icon: Phone },
   { name: 'Social Shareables', href: '/admin/campaigns/social', icon: Share2 },

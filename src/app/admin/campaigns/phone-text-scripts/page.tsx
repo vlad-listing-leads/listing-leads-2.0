@@ -6,7 +6,6 @@ import {
   ThumbnailCell,
   StatusCell,
   DateCell,
-  WeekCell,
 } from '@/components/admin/CampaignList'
 
 const columns: CampaignColumn[] = [
@@ -24,12 +23,6 @@ const columns: CampaignColumn[] = [
         {value || 'text'}
       </span>
     ),
-  },
-  {
-    key: 'week_start_date',
-    label: 'Week',
-    sortable: true,
-    render: (value, row) => <WeekCell weekStart={value} dayOfWeek={row.day_of_week} />,
   },
   {
     key: 'region',

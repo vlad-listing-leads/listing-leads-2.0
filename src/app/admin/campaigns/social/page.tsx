@@ -7,7 +7,6 @@ import {
   ThumbnailCell,
   StatusCell,
   DateCell,
-  WeekCell,
 } from '@/components/admin/CampaignList'
 
 const columns: CampaignColumn[] = [
@@ -30,12 +29,6 @@ const columns: CampaignColumn[] = [
         <span className="text-sm capitalize">{value?.replace('_', ' ') || 'static image'}</span>
       </div>
     ),
-  },
-  {
-    key: 'week_start_date',
-    label: 'Week',
-    sortable: true,
-    render: (value, row) => <WeekCell weekStart={value} dayOfWeek={row.day_of_week} />,
   },
   {
     key: 'region',

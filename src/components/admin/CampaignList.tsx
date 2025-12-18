@@ -11,7 +11,6 @@ import {
   Trash2,
   Eye,
   Star,
-  Calendar,
   ArrowUpDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -304,19 +303,5 @@ export function DateCell({ date }: { date?: string }) {
         year: 'numeric',
       })}
     </span>
-  )
-}
-
-export function WeekCell({ weekStart, dayOfWeek }: { weekStart?: string; dayOfWeek?: number }) {
-  if (!weekStart) return <span className="text-muted-foreground">-</span>
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-  return (
-    <div className="flex items-center gap-1 text-sm">
-      <Calendar className="w-3 h-3 text-muted-foreground" />
-      <span>{new Date(weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-      {dayOfWeek !== undefined && dayOfWeek !== null && (
-        <span className="text-muted-foreground">({days[dayOfWeek]})</span>
-      )}
-    </div>
   )
 }

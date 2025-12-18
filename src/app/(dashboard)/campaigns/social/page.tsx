@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Share2, Video, Image } from 'lucide-react'
+import { Share2, Film, Square, Youtube } from 'lucide-react'
 import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 import { cn } from '@/lib/utils'
 
-type ContentFilter = 'all' | 'video' | 'static'
+type ContentFilter = 'all' | 'reels' | 'stories' | 'youtube'
 
 export default function SocialShareablesPage() {
-  const [campaigns, setCampaigns] = useState<(CampaignCardType & { is_video?: boolean })[]>([])
+  const [campaigns, setCampaigns] = useState<(CampaignCardType & { content_type?: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFeatured, setShowFeatured] = useState(false)
@@ -32,6 +32,10 @@ export default function SocialShareablesPage() {
     fetchCampaigns()
   }, [])
 
+  const reelsCount = campaigns.filter(c => c.content_type === 'reels').length
+  const storiesCount = campaigns.filter(c => c.content_type === 'stories').length
+  const youtubeCount = campaigns.filter(c => c.content_type === 'youtube').length
+
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
       const searchText = searchQuery.toLowerCase()
@@ -43,8 +47,7 @@ export default function SocialShareablesPage() {
 
       const matchesContent =
         contentFilter === 'all' ||
-        (contentFilter === 'video' && campaign.is_video) ||
-        (contentFilter === 'static' && !campaign.is_video)
+        campaign.content_type === contentFilter
 
       return matchesSearch && matchesFeatured && matchesContent
     })
@@ -55,9 +58,6 @@ export default function SocialShareablesPage() {
       prev.map(c => c.id === campaignId ? { ...c, isFavorite } : c)
     )
   }
-
-  const videoCount = campaigns.filter(c => c.is_video).length
-  const staticCount = campaigns.filter(c => !c.is_video).length
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -91,28 +91,40 @@ export default function SocialShareablesPage() {
               All ({campaigns.length})
             </button>
             <button
-              onClick={() => setContentFilter('static')}
+              onClick={() => setContentFilter('reels')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-                contentFilter === 'static'
+                contentFilter === 'reels'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              <Image className="w-4 h-4" />
-              Static ({staticCount})
+              <Film className="w-4 h-4" />
+              Reels ({reelsCount})
             </button>
             <button
-              onClick={() => setContentFilter('video')}
+              onClick={() => setContentFilter('stories')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-                contentFilter === 'video'
+                contentFilter === 'stories'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              <Video className="w-4 h-4" />
-              Video ({videoCount})
+              <Square className="w-4 h-4" />
+              Stories ({storiesCount})
+            </button>
+            <button
+              onClick={() => setContentFilter('youtube')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                contentFilter === 'youtube'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              <Youtube className="w-4 h-4" />
+              YouTube ({youtubeCount})
             </button>
           </div>
         )}
