@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Settings, Shield, LogOut } from 'lucide-react'
+import { Settings, Shield, LogOut, CreditCard } from 'lucide-react'
 import { HelloBar } from '@/components/HelloBar'
 
 export default function DashboardLayout({
@@ -144,6 +144,12 @@ export default function DashboardLayout({
                   <Link href="/profile" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     Profile & Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/billing" className="cursor-pointer">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Billing
                   </Link>
                 </DropdownMenuItem>
                 {isAdmin && (

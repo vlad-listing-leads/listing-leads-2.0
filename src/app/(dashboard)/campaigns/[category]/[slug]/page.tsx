@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowLeft, Heart, ExternalLink, Copy, Check, ChevronDown, Search, Target, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -32,14 +31,6 @@ interface ExecutionStep {
   }
 }
 
-// Category to back link mapping
-const categoryBackLinks: Record<CampaignCategory, { href: string; label: string }> = {
-  'phone-text-scripts': { href: '/campaigns/phone-text-scripts', label: 'Text Scripts' },
-  'email-campaigns': { href: '/campaigns/email', label: 'Email Campaigns' },
-  'direct-mail': { href: '/campaigns/direct-mail', label: 'Direct Mail' },
-  'social-shareables': { href: '/campaigns/social', label: 'Social Shareables' },
-}
-
 // Category-specific gradient styles (matching CampaignCard)
 const categoryGradientStyles: Record<CampaignCategory, React.CSSProperties> = {
   'phone-text-scripts': { background: 'linear-gradient(to bottom, #FFEBAF 0%, #FEF8EC 67%)' },
@@ -54,6 +45,14 @@ const categoryExampleBg: Record<CampaignCategory, string> = {
   'email-campaigns': 'bg-[#F7F9F7]',
   'social-shareables': 'bg-[#F3F7FF]',
   'direct-mail': 'bg-[#FFEFEA]',
+}
+
+// Category-specific fade colors for bottom mask
+const categoryFadeColors: Record<CampaignCategory, string> = {
+  'phone-text-scripts': 'from-transparent via-[#FEF8EC]/80 to-[#FEF8EC]',
+  'email-campaigns': 'from-transparent via-[#F7F9F7]/80 to-[#F7F9F7]',
+  'social-shareables': 'from-transparent via-[#F3F7FF]/80 to-[#F3F7FF]',
+  'direct-mail': 'from-transparent via-[#FFEFEA]/80 to-[#FFEFEA]',
 }
 
 export default function CampaignDetailPage() {
@@ -141,7 +140,6 @@ export default function CampaignDetailPage() {
   }
 
   const config = categoryConfig[category]
-  const backLink = categoryBackLinks[category]
   const executionSteps = (campaign.execution_steps as unknown as ExecutionStep[]) || []
 
   // Get example images
@@ -157,6 +155,7 @@ export default function CampaignDetailPage() {
 
   const heroGradient = categoryGradientStyles[category]
   const exampleBgClass = categoryExampleBg[category]
+  const fadeClass = categoryFadeColors[category]
 
   // Region flag mapping
   const regionFlags: Record<string, { flag: string; label: string }> = {
@@ -170,16 +169,16 @@ export default function CampaignDetailPage() {
   return (
     <div className="flex flex-col h-full bg-background overflow-y-auto">
       {/* Hero Section */}
-      <div className="relative overflow-hidden" style={heroGradient}>
+      <div className="relative overflow-hidden px-8" style={heroGradient}>
         {/* Top Navigation */}
-        <div className="flex items-center justify-between px-6 py-3">
-          <Link
-            href={backLink.href}
+        <div className="flex items-center justify-between py-3">
+          <button
+            onClick={() => router.back()}
             className="flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
-          </Link>
+          </button>
 
           <Button
             variant="ghost"
@@ -196,40 +195,39 @@ export default function CampaignDetailPage() {
         </div>
 
         {/* Hero Content */}
-        <div className="px-6 pb-6 pt-2">
-          <div className="flex items-center justify-between gap-8">
-            {/* Left: Title */}
-            <div className="flex-1">
-              <Badge className="bg-foreground/10 text-foreground text-xs font-medium border-0 mb-3 hover:bg-foreground/10">
-                {config.label}
-              </Badge>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">{campaign.name}</h1>
+        <div className="flex items-center justify-center gap-12 py-4">
+          {/* Left: Title */}
+          <div className="w-[500px] text-center">
+            <Badge className="bg-foreground/10 text-foreground text-xs font-medium border-0 mb-3 hover:bg-foreground/10">
+              {config.label}
+            </Badge>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">{campaign.name}</h1>
+            {/* Region indicator */}
+            <div className="flex items-center justify-center gap-1.5 mt-4 text-sm text-foreground/60">
+              <span>{regionInfo.flag}</span>
+              <span>Created for {regionInfo.label}</span>
             </div>
+          </div>
 
-            {/* Right: Thumbnail Preview */}
-            {campaign.thumbnail_url && (
-              <div className="hidden md:block flex-shrink-0">
-                <div className="relative w-[500px] h-auto">
-                  <img
-                    src={campaign.thumbnail_url}
-                    alt="Campaign preview"
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
+          {/* Right: Thumbnail Preview */}
+          {campaign.thumbnail_url && (
+            <div className="hidden md:block flex-shrink-0">
+              <div className="relative w-[500px] h-auto overflow-hidden rounded-lg">
+                <img
+                  src={campaign.thumbnail_url}
+                  alt="Campaign preview"
+                  className="w-full h-auto"
+                />
+                {/* Bottom fade mask */}
+                <div className={cn('absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b pointer-events-none', fadeClass)} />
               </div>
-            )}
-          </div>
-
-          {/* Region indicator */}
-          <div className="flex items-center gap-1.5 mt-4 text-sm text-foreground/60">
-            <span>{regionInfo.flag}</span>
-            <span>Created for {regionInfo.label}</span>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
+      <main className="flex-1 px-8 py-8 max-w-3xl mx-auto w-full">
         {/* Introduction */}
         {campaign.introduction && (
           <section className="mb-8 pb-8 border-b border-border">
@@ -529,7 +527,7 @@ export default function CampaignDetailPage() {
                   <img
                     src={imageUrl}
                     alt={`Example ${index + 1}`}
-                    className="max-w-full h-auto rounded-lg shadow-md"
+                    className="max-w-full h-auto rounded-lg"
                   />
                 </div>
               ))}

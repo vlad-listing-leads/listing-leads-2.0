@@ -368,15 +368,20 @@ export default function ProfilePage() {
     }
   }
 
-  // Group fields by category
-  const fieldsByCategory = fields.reduce((acc, field) => {
-    const category = field.category || 'general'
-    if (!acc[category]) {
-      acc[category] = []
-    }
-    acc[category].push(field)
-    return acc
-  }, {} as Record<string, ProfileField[]>)
+  // Fields already handled in Account Settings section
+  const accountSettingsFields = ['first_name', 'last_name', 'email']
+
+  // Group fields by category (excluding fields already in Account Settings)
+  const fieldsByCategory = fields
+    .filter(field => !accountSettingsFields.includes(field.field_key))
+    .reduce((acc, field) => {
+      const category = field.category || 'general'
+      if (!acc[category]) {
+        acc[category] = []
+      }
+      acc[category].push(field)
+      return acc
+    }, {} as Record<string, ProfileField[]>)
 
   const renderField = (field: ProfileField) => {
     const value = values[field.field_key] || ''

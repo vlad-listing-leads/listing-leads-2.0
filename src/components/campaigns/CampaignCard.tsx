@@ -71,6 +71,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
   const detailUrl = `/campaigns/${campaign.category}/${campaign.slug}`
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
     if (isLoading) return
 

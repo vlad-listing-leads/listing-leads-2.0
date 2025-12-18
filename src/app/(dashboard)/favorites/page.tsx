@@ -6,15 +6,8 @@ import { cn } from '@/lib/utils'
 import { CampaignListCard } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
-interface FavoriteItem {
-  id: string
-  campaign_id: string
-  created_at: string
-  weekly_campaigns: CampaignCardType
-}
-
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([])
+  const [favorites, setFavorites] = useState<CampaignCardType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
 
@@ -41,7 +34,7 @@ export default function FavoritesPage() {
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     if (!isFavorite) {
       // Remove from favorites list
-      setFavorites(prev => prev.filter(f => f.campaign_id !== campaignId))
+      setFavorites(prev => prev.filter(f => f.id !== campaignId))
     }
   }
 
@@ -50,7 +43,7 @@ export default function FavoritesPage() {
 
     try {
       for (const fav of favorites) {
-        await fetch(`/api/favorites?campaignId=${fav.campaign_id}`, {
+        await fetch(`/api/favorites?campaignId=${fav.id}&category=${fav.category}`, {
           method: 'DELETE'
         })
       }
@@ -63,16 +56,16 @@ export default function FavoritesPage() {
   // Filter by category
   const filteredFavorites = favorites.filter(fav => {
     if (categoryFilter === 'all') return true
-    return fav.weekly_campaigns?.category === categoryFilter
+    return fav.category === categoryFilter
   })
 
   // Group by category
   const groupedFavorites = filteredFavorites.reduce((acc, fav) => {
-    const category = fav.weekly_campaigns?.category || 'social-shareables'
+    const category = fav.category || 'social-shareables'
     if (!acc[category]) acc[category] = []
     acc[category].push(fav)
     return acc
-  }, {} as Record<CampaignCategory, FavoriteItem[]>)
+  }, {} as Record<CampaignCategory, CampaignCardType[]>)
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -114,7 +107,7 @@ export default function FavoritesPage() {
             All ({favorites.length})
           </button>
           {(Object.keys(categoryConfig) as CampaignCategory[]).map(category => {
-            const count = favorites.filter(f => f.weekly_campaigns?.category === category).length
+            const count = favorites.filter(f => f.category === category).length
             if (count === 0) return null
             return (
               <button
@@ -174,7 +167,7 @@ export default function FavoritesPage() {
                   {groupedFavorites[category].map(fav => (
                     <CampaignListCard
                       key={fav.id}
-                      campaign={{ ...fav.weekly_campaigns, isFavorite: true }}
+                      campaign={fav}
                       onFavoriteToggle={handleFavoriteToggle}
                     />
                   ))}

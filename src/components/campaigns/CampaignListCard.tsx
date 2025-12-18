@@ -4,11 +4,27 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignCard as CampaignCardType } from '@/types/campaigns'
+import { CampaignCard as CampaignCardType, CampaignCategory } from '@/types/campaigns'
 
 interface CampaignListCardProps {
   campaign: CampaignCardType
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
+}
+
+// Category-specific gradient styles (custom gradients with percentage stops)
+const categoryGradientStyles: Record<CampaignCategory, React.CSSProperties> = {
+  'phone-text-scripts': { background: 'linear-gradient(to bottom, #FFEBAF 0%, #FEF8EC 67%)' },
+  'email-campaigns': { background: 'linear-gradient(to bottom, #AED4C7 0%, #F7F9F7 40%)' },
+  'social-shareables': { background: 'linear-gradient(to bottom, #A4CDFF 0%, #F3F7FF 40%)' },
+  'direct-mail': { background: 'linear-gradient(to bottom, #F6C9BC 0%, #FFEFEA 40%)' },
+}
+
+// Category-specific fade colors for bottom mask
+const categoryFadeColors: Record<CampaignCategory, string> = {
+  'phone-text-scripts': 'from-transparent via-[#FEF8EC]/80 to-[#FEF8EC]',
+  'email-campaigns': 'from-transparent via-[#F7F9F7]/80 to-[#F7F9F7]',
+  'social-shareables': 'from-transparent via-[#F3F7FF]/80 to-[#F3F7FF]',
+  'direct-mail': 'from-transparent via-[#FFEFEA]/80 to-[#FFEFEA]',
 }
 
 // Hook for lazy loading with Intersection Observer
@@ -41,6 +57,8 @@ export function CampaignListCard({ campaign, onFavoriteToggle }: CampaignListCar
   const { ref, isInView } = useInView()
 
   const detailUrl = `/campaigns/${campaign.category}/${campaign.slug}`
+  const gradientStyle = categoryGradientStyles[campaign.category]
+  const fadeClass = categoryFadeColors[campaign.category]
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -89,24 +107,29 @@ export function CampaignListCard({ campaign, onFavoriteToggle }: CampaignListCar
     <Link
       href={detailUrl}
       className={cn(
-        'group block rounded-2xl overflow-hidden bg-[#FDF9F3] transition-all duration-200',
+        'group block rounded-2xl overflow-hidden transition-all duration-200 border border-black/10',
         isHovered && 'ring-2 ring-primary/50 shadow-lg'
       )}
+      style={gradientStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Thumbnail */}
-      <div className="aspect-[4/3] relative overflow-hidden bg-[#FDF9F3]">
+      <div className="aspect-[4/3] relative overflow-hidden">
         {campaign.thumbnail_url ? (
-          <img
-            src={campaign.thumbnail_url}
-            alt={campaign.name}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-contain object-center p-2"
-          />
+          <>
+            <img
+              src={campaign.thumbnail_url}
+              alt={campaign.name}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-contain object-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
+            />
+            {/* Bottom fade mask */}
+            <div className={cn('absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b pointer-events-none', fadeClass)} />
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-3/4 h-3/4 bg-white/50 rounded-lg flex items-center justify-center">
+            <div className="w-3/4 h-3/4 bg-white/50 rounded-lg flex items-center justify-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out">
               <span className="text-muted-foreground text-sm">Preview</span>
             </div>
           </div>
@@ -129,13 +152,13 @@ export function CampaignListCard({ campaign, onFavoriteToggle }: CampaignListCar
       </div>
 
       {/* Content */}
-      <div className="p-4 pt-3 bg-white">
-        <h3 className="font-semibold text-foreground line-clamp-2 mb-1">
+      <div className="px-4 pb-4 pt-1 text-center">
+        <h4 className="text-sm font-medium text-foreground line-clamp-2">
           {campaign.name || campaign.title}
-        </h3>
+        </h4>
         {campaign.introduction && (
-          <p className="text-sm text-muted-foreground line-clamp-1">
-            {campaign.introduction}
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+            {campaign.introduction.replace(/<[^>]*>/g, '')}
           </p>
         )}
       </div>
