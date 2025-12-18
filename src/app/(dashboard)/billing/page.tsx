@@ -152,16 +152,24 @@ export default function BillingPage() {
               )}
             </div>
 
-            {/* Manage Billing Button */}
+            {/* Manage Billing Section */}
             <div className="bg-card border border-border rounded-xl p-6">
               <h2 className="text-lg font-semibold text-foreground mb-2">Manage Subscription</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Update your payment method, view invoices, or change your plan.
               </p>
-              <Button onClick={handleManageBilling} className="gap-2">
-                <ExternalLink className="w-4 h-4" />
-                Manage Billing
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={handleManageBilling} className="gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  Manage Billing
+                </Button>
+                <Button onClick={handleManageBilling} variant="outline" className="gap-2">
+                  Upgrade Plan
+                </Button>
+                <Button onClick={handleManageBilling} variant="outline" className="gap-2 text-destructive hover:text-destructive">
+                  Cancel Subscription
+                </Button>
+              </div>
             </div>
           </div>
         )}
