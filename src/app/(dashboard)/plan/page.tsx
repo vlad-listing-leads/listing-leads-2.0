@@ -131,9 +131,6 @@ export default function ListingAttractionPlanPage() {
         )
       }))
     )
-
-    // Update count
-    setFavoritesCount(prev => isFavorite ? prev + 1 : prev - 1)
   }
 
   const handleRegionChange = (regionCode: string) => {
