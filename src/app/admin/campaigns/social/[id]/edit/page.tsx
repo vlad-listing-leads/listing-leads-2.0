@@ -4,10 +4,11 @@ import { use } from 'react'
 import { CampaignEditor, FieldConfig } from '@/components/admin/CampaignEditor'
 
 const fields: FieldConfig[] = [
+  { name: 'is_active', label: 'Active', type: 'switch', description: 'Make visible to users' },
   { name: 'name', label: 'Campaign Name', type: 'text', required: true },
-  { name: 'slug', label: 'Slug', type: 'text', placeholder: 'auto-generated from name if empty' },
-  { name: 'introduction', label: 'Introduction', type: 'textarea', rows: 3 },
-  { name: 'thumbnail_url', label: 'Thumbnail URL', type: 'url' },
+  { name: 'slug', label: 'Slug', type: 'slug', placeholder: 'auto-generated from name', description: 'URL-friendly identifier (must be unique)' },
+  { name: 'introduction', label: 'Introduction', type: 'html', rows: 3, placeholder: 'Brief description of this content' },
+  { name: 'thumbnail_url', label: 'Thumbnail Image', type: 'image', folder: 'campaigns/Social Shareables' },
   { name: 'is_video', label: 'Is Video', type: 'switch' },
   { name: 'content_type', label: 'Content Type', type: 'select', options: [
     { value: 'static_image', label: 'Static Image' },
@@ -22,24 +23,13 @@ const fields: FieldConfig[] = [
   { name: 'video_flow_pdf_title', label: 'Video Flow PDF Title', type: 'text' },
   { name: 'video_flow_pdf_url', label: 'Video Flow PDF URL', type: 'url' },
   { name: 'audio_transcription_url', label: 'Audio Transcription URL', type: 'url' },
-  { name: 'example_image_url', label: 'Example Image URL', type: 'url' },
-  { name: 'execution_steps', label: 'Execution Steps (JSON)', type: 'json', rows: 6 },
-  { name: 'region', label: 'Region', type: 'select', options: [
+  { name: 'example_image_url', label: 'Example Image', type: 'image', folder: 'campaigns/Social Shareables' },
+  { name: 'region', label: 'Region', type: 'button-select', options: [
     { value: 'US', label: 'United States' },
     { value: 'CA', label: 'Canada' },
     { value: 'UK', label: 'United Kingdom' },
     { value: 'AU', label: 'Australia' },
   ]},
-  { name: 'week_start_date', label: 'Week Start Date', type: 'date' },
-  { name: 'day_of_week', label: 'Day of Week', type: 'select', options: [
-    { value: '0', label: 'Monday' },
-    { value: '1', label: 'Tuesday' },
-    { value: '2', label: 'Wednesday' },
-    { value: '3', label: 'Thursday' },
-    { value: '4', label: 'Friday' },
-  ]},
-  { name: 'is_featured', label: 'Featured', type: 'switch' },
-  { name: 'is_active', label: 'Active', type: 'switch' },
 ]
 
 export default function EditSocialShareablePage({

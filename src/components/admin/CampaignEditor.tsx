@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon, Check, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,11 +12,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Spinner } from '@/components/ui/spinner'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 export interface FieldConfig {
   name: string
   label: string
-  type: 'text' | 'textarea' | 'url' | 'date' | 'number' | 'select' | 'switch' | 'json' | 'image'
+  type: 'text' | 'textarea' | 'url' | 'date' | 'number' | 'select' | 'switch' | 'json' | 'image' | 'button-select' | 'slug' | 'html'
   placeholder?: string
   required?: boolean
   options?: { value: string; label: string }[]
@@ -46,9 +47,17 @@ export function CampaignEditor({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({})
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const slugCheckTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const isEditing = !!campaignId
+
+  // Strip HTML tags from a string
+  const stripHtml = (html: string) => {
+    if (!html) return ''
+    return html.replace(/<[^>]*>/g, '').trim()
+  }
 
   useEffect(() => {
     if (campaignId) {
@@ -97,6 +106,76 @@ export function CampaignEditor({
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim()
+  }
+
+  // Check if slug is unique
+  const checkSlugUniqueness = useCallback(async (slug: string) => {
+    if (!slug) {
+      setSlugStatus('idle')
+      return
+    }
+
+    setSlugStatus('checking')
+    const supabase = createClient()
+
+    try {
+      let query = supabase
+        .from(tableName)
+        .select('id')
+        .eq('slug', slug)
+        .limit(1)
+
+      // Exclude current campaign when editing
+      if (campaignId) {
+        query = query.neq('id', campaignId)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Slug check error:', error)
+        setSlugStatus('idle')
+        return
+      }
+
+      setSlugStatus(data && data.length > 0 ? 'taken' : 'available')
+    } catch (err) {
+      console.error('Slug check error:', err)
+      setSlugStatus('idle')
+    }
+  }, [tableName, campaignId])
+
+  // Handle name change - auto-generate slug
+  const handleNameChange = (name: string) => {
+    handleChange('name', name)
+
+    // Only auto-generate slug if it hasn't been manually edited
+    if (!formData.slug || formData.slug === generateSlug(formData.name || '')) {
+      const newSlug = generateSlug(name)
+      handleChange('slug', newSlug)
+
+      // Debounce slug check
+      if (slugCheckTimeout.current) {
+        clearTimeout(slugCheckTimeout.current)
+      }
+      slugCheckTimeout.current = setTimeout(() => {
+        checkSlugUniqueness(newSlug)
+      }, 500)
+    }
+  }
+
+  // Handle slug change
+  const handleSlugChange = (slug: string) => {
+    const cleanSlug = generateSlug(slug)
+    handleChange('slug', cleanSlug)
+
+    // Debounce slug check
+    if (slugCheckTimeout.current) {
+      clearTimeout(slugCheckTimeout.current)
+    }
+    slugCheckTimeout.current = setTimeout(() => {
+      checkSlugUniqueness(cleanSlug)
+    }, 500)
   }
 
   const handleImageUpload = async (fieldName: string, file: File, folder?: string) => {
@@ -250,7 +329,7 @@ export function CampaignEditor({
                 <Input
                   id={field.name}
                   value={formData[field.name] || ''}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  onChange={(e) => field.name === 'name' ? handleNameChange(e.target.value) : handleChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
                   required={field.required}
                 />
@@ -324,6 +403,67 @@ export function CampaignEditor({
                     </option>
                   ))}
                 </select>
+              )}
+
+              {field.type === 'button-select' && (
+                <div className="flex flex-wrap gap-2">
+                  {field.options?.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleChange(field.name, opt.value)}
+                      className={cn(
+                        'px-4 py-2 rounded-lg text-sm font-medium transition-colors border',
+                        formData[field.name] === opt.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:bg-accent'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {field.type === 'slug' && (
+                <div className="space-y-1">
+                  <div className="relative">
+                    <Input
+                      id={field.name}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => handleSlugChange(e.target.value)}
+                      placeholder={field.placeholder}
+                      className="pr-10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {slugStatus === 'checking' && (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      )}
+                      {slugStatus === 'available' && (
+                        <Check className="w-4 h-4 text-green-500" />
+                      )}
+                      {slugStatus === 'taken' && (
+                        <AlertCircle className="w-4 h-4 text-destructive" />
+                      )}
+                    </div>
+                  </div>
+                  {slugStatus === 'taken' && (
+                    <p className="text-xs text-destructive">This slug is already taken</p>
+                  )}
+                  {slugStatus === 'available' && formData[field.name] && (
+                    <p className="text-xs text-green-600">Slug is available</p>
+                  )}
+                </div>
+              )}
+
+              {field.type === 'html' && (
+                <Textarea
+                  id={field.name}
+                  value={stripHtml(formData[field.name] || '')}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  rows={field.rows || 4}
+                />
               )}
 
               {field.type === 'image' && (
