@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Settings,
   LogOut,
+  Shield,
 } from 'lucide-react'
 
 import {
@@ -78,9 +79,10 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     email: string
     avatar?: string
   }
+  isAdmin?: boolean
 }
 
-export function AppSidebar({ favoritesCount = 0, user, ...props }: AppSidebarProps) {
+export function AppSidebar({ favoritesCount = 0, user, isAdmin = false, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
@@ -102,9 +104,9 @@ export function AppSidebar({ favoritesCount = 0, user, ...props }: AppSidebarPro
                 <Image
                   src={logoSrc}
                   alt="Listing Leads"
-                  width={150}
-                  height={32}
-                  className="h-8 w-auto group-data-[collapsible=icon]:hidden"
+                  width={112}
+                  height={24}
+                  className="h-6 w-auto group-data-[collapsible=icon]:hidden"
                   priority
                 />
                 {/* Collapsed state - show just icon */}
@@ -240,6 +242,14 @@ export function AppSidebar({ favoritesCount = 0, user, ...props }: AppSidebarPro
                     Account Settings
                   </Link>
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />

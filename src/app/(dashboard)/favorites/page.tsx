@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Heart, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CampaignCard } from '@/components/campaigns'
+import { CampaignListCard } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
 
 interface FavoriteItem {
@@ -170,9 +170,9 @@ export default function FavoritesPage() {
                   )} />
                   {categoryConfig[category].label}
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {groupedFavorites[category].map(fav => (
-                    <CampaignCard
+                    <CampaignListCard
                       key={fav.id}
                       campaign={{ ...fav.weekly_campaigns, isFavorite: true }}
                       onFavoriteToggle={handleFavoriteToggle}

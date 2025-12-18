@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignCard } from '@/components/campaigns'
-import { CampaignCard as CampaignCardType, WeekData, categoryConfig, CampaignCategory } from '@/types/campaigns'
+import { WeekData } from '@/types/campaigns'
 
-// Region options
+// Region options - using flag-icons CSS classes
 const regions = [
-  { code: 'US', flag: '🇺🇸', name: 'United States' },
-  { code: 'CA', flag: '🇨🇦', name: 'Canada' },
-  { code: 'UK', flag: '🇬🇧', name: 'United Kingdom' },
-  { code: 'AU', flag: '🇦🇺', name: 'Australia' },
+  { code: 'US', flagClass: 'fi fi-us', name: 'United States' },
+  { code: 'CA', flagClass: 'fi fi-ca', name: 'Canada' },
+  { code: 'UK', flagClass: 'fi fi-gb', name: 'United Kingdom' },
+  { code: 'AU', flagClass: 'fi fi-au', name: 'Australia' },
 ]
 
 // Get week dates helper
@@ -57,32 +57,17 @@ function WeekSection({
   onFavoriteToggle: (campaignId: string, isFavorite: boolean) => void
 }) {
   const dates = getWeekDates(weekData.weekStart)
-  const weekRange = formatWeekRange(weekData.weekStart)
 
   return (
-    <div className="mb-10">
-      {/* Week Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-muted-foreground" />
-          <h3 className="text-lg font-semibold text-foreground">{weekRange}</h3>
-        </div>
-        {weekData.isCurrentWeek && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            This Week
-          </span>
-        )}
-      </div>
-
+    <div>
       {/* Days Grid */}
       <div className="grid grid-cols-5 gap-4">
         {dates.map((day, index) => (
           <div key={day.dayName} className="min-w-0">
             {/* Day Header */}
-            <div className="mb-3">
-              <p className="text-sm text-muted-foreground">{day.dayName}</p>
-              <p className="text-sm font-medium text-foreground">{day.month} {day.date}</p>
+            <div className="mb-3 pb-2 border-b border-border">
+              <p className="text-sm font-medium text-foreground">{day.dayName}</p>
+              <p className="text-xs text-muted-foreground">{day.month} {day.date}</p>
             </div>
 
             {/* Campaign Cards for this day */}
@@ -109,25 +94,21 @@ export default function ListingAttractionPlanPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedRegion, setSelectedRegion] = useState('US')
   const [regionMenuOpen, setRegionMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [favoritesCount, setFavoritesCount] = useState(0)
-  const [categoryFilter, setCategoryFilter] = useState<CampaignCategory | 'all'>('all')
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0)
 
   // Fetch campaigns
   const fetchCampaigns = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/campaigns/weekly?region=${selectedRegion}&weeks=4`)
+      const response = await fetch(`/api/campaigns/weekly?region=${selectedRegion}&weeks=8`)
       const data = await response.json()
 
       if (data.weeks) {
         setWeeks(data.weeks)
 
-        // Count favorites
-        const totalFavorites = data.weeks.reduce((count: number, week: WeekData) =>
-          count + week.campaigns.filter(c => c.isFavorite).length, 0
-        )
-        setFavoritesCount(totalFavorites)
+        // Find current week index or default to first
+        const currentIdx = data.weeks.findIndex((w: WeekData) => w.isCurrentWeek)
+        setCurrentWeekIndex(currentIdx >= 0 ? currentIdx : 0)
       }
     } catch (error) {
       console.error('Failed to fetch campaigns:', error)
@@ -162,25 +143,43 @@ export default function ListingAttractionPlanPage() {
 
   const currentRegion = regions.find(r => r.code === selectedRegion) || regions[0]
 
-  // Filter campaigns by search and category
-  const filteredWeeks = weeks.map(week => ({
-    ...week,
-    campaigns: week.campaigns.filter(campaign => {
-      const searchText = searchQuery.toLowerCase()
-      const matchesSearch = !searchQuery ||
-        (campaign.name || campaign.title || '').toLowerCase().includes(searchText) ||
-        (campaign.introduction || campaign.description || '').toLowerCase().includes(searchText)
+  // Get current week data
+  const currentWeek = weeks[currentWeekIndex]
 
-      const matchesCategory = categoryFilter === 'all' || campaign.category === categoryFilter
+  // Navigation handlers
+  const goToPreviousWeek = () => {
+    if (currentWeekIndex < weeks.length - 1) {
+      setCurrentWeekIndex(currentWeekIndex + 1)
+    }
+  }
 
-      return matchesSearch && matchesCategory
-    })
-  })).filter(week => week.campaigns.length > 0)
+  const goToNextWeek = () => {
+    if (currentWeekIndex > 0) {
+      setCurrentWeekIndex(currentWeekIndex - 1)
+    }
+  }
+
+  // Can always go to older weeks (previous)
+  const canGoPrevious = currentWeekIndex < weeks.length - 1
+
+  // Can only go to newer weeks (next) if that week has campaigns
+  const nextWeek = currentWeekIndex > 0 ? weeks[currentWeekIndex - 1] : null
+  const canGoNext = currentWeekIndex > 0 && nextWeek && nextWeek.campaigns.length > 0
+
+  // Find the index of the current week
+  const currentWeekIdx = weeks.findIndex(w => w.isCurrentWeek)
+  const isOnCurrentWeek = currentWeekIndex === currentWeekIdx
+
+  const goToThisWeek = () => {
+    if (currentWeekIdx >= 0) {
+      setCurrentWeekIndex(currentWeekIdx)
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Page Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8">
           {/* Page Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -196,7 +195,7 @@ export default function ListingAttractionPlanPage() {
                 onClick={() => setRegionMenuOpen(!regionMenuOpen)}
                 className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
               >
-                <span className="text-lg">{currentRegion.flag}</span>
+                <span className={cn(currentRegion.flagClass, "text-base rounded-[4px]")} />
                 <span className="text-sm font-medium text-foreground">{currentRegion.code}</span>
                 <ChevronDown className={cn(
                   "w-4 h-4 text-muted-foreground transition-transform",
@@ -222,7 +221,7 @@ export default function ListingAttractionPlanPage() {
                             : 'text-foreground hover:bg-accent/50'
                         )}
                       >
-                        <span>{region.flag}</span>
+                        <span className={cn(region.flagClass, "text-base rounded-[4px]")} />
                         <span>{region.name}</span>
                       </button>
                     ))}
@@ -232,33 +231,68 @@ export default function ListingAttractionPlanPage() {
             </div>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+          {/* Week Navigation */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              {/* Navigation Arrows */}
+              <div className="flex items-center">
+                <button
+                  onClick={goToPreviousWeek}
+                  disabled={!canGoPrevious}
+                  className={cn(
+                    'p-2 rounded-l-lg border border-border transition-colors',
+                    canGoPrevious
+                      ? 'hover:bg-accent text-foreground'
+                      : 'opacity-40 cursor-not-allowed text-muted-foreground'
+                  )}
+                  title="Previous week"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={goToNextWeek}
+                  disabled={!canGoNext}
+                  className={cn(
+                    'p-2 rounded-r-lg border border-border border-l-0 transition-colors',
+                    canGoNext
+                      ? 'hover:bg-accent text-foreground'
+                      : 'opacity-40 cursor-not-allowed text-muted-foreground'
+                  )}
+                  title="Next week"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Week Date Range */}
+              {currentWeek && (
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-lg font-semibold text-foreground">
+                    {formatWeekRange(currentWeek.weekStart)}
+                  </span>
+                  {currentWeek.isCurrentWeek && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-sm font-medium text-green-600 dark:text-green-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Current
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* This Week Button */}
             <button
-              onClick={() => setCategoryFilter('all')}
+              onClick={goToThisWeek}
+              disabled={isOnCurrentWeek || currentWeekIdx < 0}
               className={cn(
-                'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-                categoryFilter === 'all'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                isOnCurrentWeek || currentWeekIdx < 0
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
               )}
             >
-              All
+              This Week
             </button>
-            {(Object.keys(categoryConfig) as CampaignCategory[]).map(category => (
-              <button
-                key={category}
-                onClick={() => setCategoryFilter(category)}
-                className={cn(
-                  'px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-                  categoryFilter === category
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                )}
-              >
-                {categoryConfig[category].label}
-              </button>
-            ))}
           </div>
 
           {/* Loading State */}
@@ -269,29 +303,24 @@ export default function ListingAttractionPlanPage() {
                 <p className="text-muted-foreground">Loading campaigns...</p>
               </div>
             </div>
-          ) : filteredWeeks.length === 0 ? (
+          ) : !currentWeek || currentWeek.campaigns.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">No campaigns found</h3>
+                <h3 className="text-lg font-medium text-foreground mb-2">No campaigns this week</h3>
                 <p className="text-muted-foreground">
-                  {searchQuery
-                    ? 'Try adjusting your search or filters'
-                    : 'Check back later for new content'}
+                  Check back later for new content
                 </p>
               </div>
             </div>
           ) : (
-            /* Week Sections */
-            filteredWeeks.map((week) => (
-              <WeekSection
-                key={week.weekStart}
-                weekData={week}
-                onFavoriteToggle={handleFavoriteToggle}
-              />
-            ))
+            /* Current Week Section */
+            <WeekSection
+              weekData={currentWeek}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
           )}
       </main>
     </div>

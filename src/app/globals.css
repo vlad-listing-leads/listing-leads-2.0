@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "flag-icons/css/flag-icons.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -207,6 +208,11 @@ button {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Headings use Bricolage Grotesque */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-bricolage), system-ui, sans-serif;
   }
 
   /* Smooth theme transitions */

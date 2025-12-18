@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { FileBox } from 'lucide-react'
-import { CampaignCard, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
+import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 
 export default function DirectMailPage() {
@@ -95,16 +95,11 @@ export default function DirectMailPage() {
             </div>
           </div>
         ) : (
-          /* Campaign Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredCampaigns.map(campaign => (
-              <CampaignCard
-                key={campaign.id}
-                campaign={campaign}
-                onFavoriteToggle={handleFavoriteToggle}
-              />
-            ))}
-          </div>
+          /* Campaign Grid with Lazy Loading */
+          <LazyGrid
+            campaigns={filteredCampaigns}
+            onFavoriteToggle={handleFavoriteToggle}
+          />
         )}
       </main>
     </div>

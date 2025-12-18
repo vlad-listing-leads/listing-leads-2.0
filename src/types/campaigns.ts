@@ -160,3 +160,44 @@ export interface UserFavorite {
   category: CampaignCategory
   created_at: string
 }
+
+// Calendar week for 52-week calendar view
+export interface CalendarWeek {
+  id: string
+  week_start_date: string
+  year: number
+  week_number: number
+  is_available: boolean
+  theme: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  // Computed counts per category
+  campaign_counts?: {
+    'email-campaigns': number
+    'phone-text-scripts': number
+    'social-shareables': number
+    'direct-mail': number
+  }
+}
+
+// Campaign assignment to a calendar week
+export interface CampaignWeekAssignment {
+  id: string
+  week_id: string
+  campaign_id: string
+  category: CampaignCategory
+  day_of_week: number
+  display_order: number
+  created_at: string
+  // Joined campaign data
+  campaign?: CampaignCard
+}
+
+// ImageKit folder mapping for campaign categories
+export const categoryImageKitFolders: Record<CampaignCategory, string> = {
+  'email-campaigns': 'campaigns/Email',
+  'phone-text-scripts': 'campaigns/Text & Voice',
+  'social-shareables': 'campaigns/Social Shareables',
+  'direct-mail': 'campaigns/Direct Mail',
+}

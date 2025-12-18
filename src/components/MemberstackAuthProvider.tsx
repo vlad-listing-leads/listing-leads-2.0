@@ -45,7 +45,7 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const authAttempted = useRef(false)
+  const authAttemptedForPath = useRef<string | null>(null)
 
   const isPublicPath = PUBLIC_PATHS.some(path => pathname?.startsWith(path))
 
@@ -93,9 +93,16 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
       return
     }
 
-    // Prevent double auth attempts (component level)
-    if (authAttempted.current) return
-    authAttempted.current = true
+    // If already authenticated, just ensure loading is false
+    if (isAuthenticated) {
+      setIsLoading(false)
+      return
+    }
+
+    // Prevent double auth attempts for the same path
+    // But allow re-auth when navigating to a different path
+    if (authAttemptedForPath.current === pathname) return
+    authAttemptedForPath.current = pathname
 
     const checkAuth = async () => {
       const supabase = createClient()
@@ -202,7 +209,7 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
     }
 
     checkAuth()
-  }, [isPublicPath, authenticateWithMemberstack, router])
+  }, [isPublicPath, isAuthenticated, pathname, authenticateWithMemberstack, router])
 
   // Show loading state
   if (isLoading && !isPublicPath) {

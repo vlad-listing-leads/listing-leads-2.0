@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -11,34 +11,58 @@ interface CampaignCardProps {
   onFavoriteToggle?: (campaignId: string, isFavorite: boolean) => void
 }
 
-// Category-specific gradient backgrounds (className-based)
-const categoryGradients: Record<CampaignCategory, string> = {
-  'phone-text-scripts': '', // Using custom style instead
-  'email-campaigns': 'bg-gradient-to-b from-blue-50 to-indigo-100 dark:from-blue-950/40 dark:to-indigo-900/30',
-  'social-shareables': 'bg-gradient-to-b from-purple-50 to-pink-100 dark:from-purple-950/40 dark:to-pink-900/30',
-  'direct-mail': 'bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900',
+// Hook for lazy loading with Intersection Observer
+function useInView(options?: IntersectionObserverInit) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [isInView, setIsInView] = useState(false)
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true)
+        observer.disconnect() // Once in view, stop observing
+      }
+    }, { rootMargin: '100px', ...options })
+
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [options])
+
+  return { ref, isInView }
 }
 
-// Category-specific gradient styles (for custom gradients with percentage stops)
+// Category-specific gradient backgrounds (className-based) - empty when using custom styles
+const categoryGradients: Record<CampaignCategory, string> = {
+  'phone-text-scripts': '',
+  'email-campaigns': '',
+  'social-shareables': '',
+  'direct-mail': '',
+}
+
+// Category-specific gradient styles (custom gradients with percentage stops)
 const categoryGradientStyles: Record<CampaignCategory, React.CSSProperties | undefined> = {
   'phone-text-scripts': { background: 'linear-gradient(to bottom, #FFEBAF 0%, #FEF8EC 67%)' },
-  'email-campaigns': undefined,
-  'social-shareables': undefined,
-  'direct-mail': undefined,
+  'email-campaigns': { background: 'linear-gradient(to bottom, #AED4C7 0%, #F7F9F7 40%)' },
+  'social-shareables': { background: 'linear-gradient(to bottom, #A4CDFF 0%, #F3F7FF 40%)' },
+  'direct-mail': { background: 'linear-gradient(to bottom, #F6C9BC 0%, #FFEFEA 40%)' },
 }
 
 // Category-specific fade colors for bottom mask
 const categoryFadeColors: Record<CampaignCategory, string> = {
   'phone-text-scripts': 'from-transparent via-[#FEF8EC]/80 to-[#FEF8EC]',
-  'email-campaigns': 'from-transparent via-indigo-100/80 to-indigo-100 dark:via-indigo-900/50 dark:to-indigo-900/30',
-  'social-shareables': 'from-transparent via-pink-100/80 to-pink-100 dark:via-pink-900/50 dark:to-pink-900/30',
-  'direct-mail': 'from-transparent via-slate-200/80 to-slate-200 dark:via-slate-900/50 dark:to-slate-900',
+  'email-campaigns': 'from-transparent via-[#F7F9F7]/80 to-[#F7F9F7]',
+  'social-shareables': 'from-transparent via-[#F3F7FF]/80 to-[#F3F7FF]',
+  'direct-mail': 'from-transparent via-[#FFEFEA]/80 to-[#FFEFEA]',
 }
 
 export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorite, setIsFavorite] = useState(campaign.isFavorite || false)
   const [isLoading, setIsLoading] = useState(false)
+  const { ref, isInView } = useInView()
 
   const config = categoryConfig[campaign.category]
   const gradientClass = categoryGradients[campaign.category]
@@ -75,11 +99,27 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
     }
   }
 
+  // Show skeleton placeholder until card is in view
+  if (!isInView) {
+    return (
+      <div ref={ref} className="rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 to-muted">
+        <div className="aspect-[4/3] relative">
+          <div className="absolute inset-0 bg-muted animate-pulse" />
+        </div>
+        <div className="px-4 pb-4 pt-1">
+          <div className="h-6 w-28 rounded-full bg-muted animate-pulse" />
+          <div className="mt-2 h-4 w-full bg-muted animate-pulse rounded" />
+          <div className="mt-1 h-4 w-3/4 bg-muted animate-pulse rounded" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Link
       href={detailUrl}
       className={cn(
-        'group block rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer',
+        'group block rounded-2xl overflow-hidden transition-all cursor-pointer border border-black/10',
         gradientClass
       )}
       style={gradientStyle}
@@ -93,6 +133,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
             <img
               src={campaign.thumbnail_url}
               alt={campaign.name}
+              loading="lazy"
               className="absolute inset-0 w-full h-full object-contain object-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
             />
             {/* Bottom fade mask */}
@@ -123,7 +164,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
       </div>
 
       {/* Content */}
-      <div className="px-4 pb-4 pt-1">
+      <div className="px-4 pb-4 pt-1 text-center">
         <span className={cn(
           'inline-block text-xs font-medium px-3 py-1 rounded-full',
           'bg-white dark:bg-black/30 text-foreground shadow-sm'
