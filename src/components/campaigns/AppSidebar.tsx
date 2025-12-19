@@ -11,7 +11,7 @@ import {
   FileEdit,
   Sparkles,
   FileText,
-  Rocket,
+  Video,
   Phone,
   Mail,
   FileBox,
@@ -43,7 +43,7 @@ const mainNavItems = [
   { icon: FileEdit, label: 'Expired Editor', href: '/expired-editor' },
   { icon: Sparkles, label: 'AI Mode', href: '/ai-mode' },
   { icon: FileText, label: 'Blueprints', href: '/blueprints' },
-  { icon: Rocket, label: 'Campaign Kickoff', href: '/campaign-kickoff' },
+  { icon: Video, label: 'Campaign Kickoffs', href: '/kickoffs' },
 ]
 
 const campaignItems = [
