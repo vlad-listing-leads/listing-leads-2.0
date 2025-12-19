@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CampaignCategory, CampaignCard, WeekData } from '@/types/campaigns'
-
-// Table name mapping for categories
-const categoryTableMap: Record<CampaignCategory, string> = {
-  'email-campaigns': 'email_campaigns',
-  'phone-text-scripts': 'phone_text_scripts',
-  'social-shareables': 'social_shareables',
-  'direct-mail': 'direct_mail_templates',
-}
+import { CATEGORY_TABLE_MAP } from '@/lib/campaign-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -114,7 +107,7 @@ export async function GET(request: NextRequest) {
     for (const [category, categoryAssignments] of Object.entries(assignmentsByCategory)) {
       if (categoryAssignments.length === 0) continue
 
-      const tableName = categoryTableMap[category as CampaignCategory]
+      const tableName = CATEGORY_TABLE_MAP[category as CampaignCategory]
       const campaignIds = categoryAssignments.map(a => a.campaign_id)
 
       const { data: campaigns, error } = await supabase

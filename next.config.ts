@@ -20,6 +20,13 @@ const nextConfig: NextConfig = {
         hostname: 'ik.imagekit.io',
       },
     ],
+    // Optimize image sizes for common device widths
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Enable modern image formats for smaller file sizes
+    formats: ['image/avif', 'image/webp'],
+    // Cache optimized images for 1 year (campaigns rarely change)
+    minimumCacheTTL: 60 * 60 * 24 * 365,
   },
 }
 

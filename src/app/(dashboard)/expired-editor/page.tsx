@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Template, Campaign } from '@/types'
+import { Template, UserCampaignCollection } from '@/types'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ interface TemplateWithCampaign extends Template {
 
 export default function ExpiredEditorPage() {
   const [templates, setTemplates] = useState<TemplateWithCampaign[]>([])
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaigns, setCampaigns] = useState<UserCampaignCollection[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')

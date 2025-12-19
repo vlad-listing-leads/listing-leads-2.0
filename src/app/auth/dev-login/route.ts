@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const DEV_USER_EMAIL = 'dev@localhost.test'
-const DEV_USER_PASSWORD = 'dev-password-12345!'
+// SECURITY: Dev login requires BOTH conditions:
+// 1. NODE_ENV === 'development'
+// 2. DEV_LOGIN_ENABLED === 'true' (explicit opt-in)
+const DEV_LOGIN_ENABLED = process.env.DEV_LOGIN_ENABLED === 'true'
+
+// Credentials from environment (not hardcoded)
+const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL || 'dev@localhost.test'
+const DEV_USER_PASSWORD = process.env.DEV_USER_PASSWORD
 const DEV_MEMBERSTACK_ID = 'dev-local-user'
 
 function createAdminClient() {
@@ -19,9 +25,23 @@ function createAdminClient() {
 }
 
 export async function GET(request: NextRequest) {
-  // Only allow in development
+  // SECURITY: Multiple checks to prevent dev login in production
+  // 1. Must be development environment
   if (process.env.NODE_ENV !== 'development') {
+    console.warn('Dev login attempted in non-development environment')
     return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // 2. Must have explicit DEV_LOGIN_ENABLED=true
+  if (!DEV_LOGIN_ENABLED) {
+    console.warn('Dev login attempted but DEV_LOGIN_ENABLED is not set')
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // 3. Must have password configured
+  if (!DEV_USER_PASSWORD) {
+    console.error('DEV_USER_PASSWORD environment variable is required for dev login')
+    return NextResponse.json({ error: 'Dev login not configured' }, { status: 500 })
   }
 
   const redirectTo = request.nextUrl.searchParams.get('redirect') || '/plan'

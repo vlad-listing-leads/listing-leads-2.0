@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { createClient } from '@/lib/supabase/server'
 
 interface SearchResult {
   id: string
@@ -15,6 +12,14 @@ interface SearchResult {
 }
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Require authentication for search
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')?.toLowerCase() || ''
   const limit = parseInt(searchParams.get('limit') || '20')
@@ -23,29 +28,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] })
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey)
-
   try {
-    // Search all 4 tables in parallel
+    // Search all 4 tables in parallel (only active campaigns)
     const [phoneTexts, emails, directMail, social] = await Promise.all([
       supabase
         .from('phone_text_scripts')
         .select('id, name, slug, introduction, thumbnail_url, is_featured')
+        .eq('is_active', true)
         .or(`name.ilike.%${query}%,introduction.ilike.%${query}%`)
         .limit(limit),
       supabase
         .from('email_campaigns')
         .select('id, name, slug, introduction, thumbnail_url, is_featured')
+        .eq('is_active', true)
         .or(`name.ilike.%${query}%,introduction.ilike.%${query}%`)
         .limit(limit),
       supabase
         .from('direct_mail_templates')
         .select('id, name, slug, introduction, thumbnail_url, is_featured')
+        .eq('is_active', true)
         .or(`name.ilike.%${query}%,introduction.ilike.%${query}%`)
         .limit(limit),
       supabase
         .from('social_shareables')
         .select('id, name, slug, introduction, thumbnail_url, is_featured, is_video')
+        .eq('is_active', true)
         .or(`name.ilike.%${query}%,introduction.ilike.%${query}%`)
         .limit(limit),
     ])

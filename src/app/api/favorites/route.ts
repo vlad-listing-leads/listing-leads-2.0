@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CampaignCategory, CampaignCard } from '@/types/campaigns'
-
-// Table names for each category
-const categoryTables: Record<CampaignCategory, string> = {
-  'phone-text-scripts': 'phone_text_scripts',
-  'email-campaigns': 'email_campaigns',
-  'direct-mail': 'direct_mail_templates',
-  'social-shareables': 'social_shareables',
-}
+import { CATEGORY_TABLE_MAP } from '@/lib/campaign-utils'
 
 // Get user's favorites with campaign details
 export async function GET() {
@@ -41,40 +34,47 @@ export async function GET() {
       favoritesByCategory[fav.category].push(fav.item_id)
     }
 
-    // Fetch campaign details for each category
+    // Fetch campaign details for all categories in PARALLEL (not sequential)
+    const categoryQueries = Object.entries(favoritesByCategory)
+      .filter(([category, itemIds]) => {
+        const tableName = CATEGORY_TABLE_MAP[category as CampaignCategory]
+        return tableName && itemIds.length > 0
+      })
+      .map(async ([category, itemIds]) => {
+        const tableName = CATEGORY_TABLE_MAP[category as CampaignCategory]
+        const { data: campaigns } = await supabase
+          .from(tableName)
+          .select('id, name, slug, introduction, thumbnail_url, region, is_featured, week_start_date, day_of_week')
+          .in('id', itemIds)
+        return { category, campaigns: campaigns || [] }
+      })
+
+    const categoryResults = await Promise.all(categoryQueries)
+
+    // Build the results from parallel query responses
     const campaignsWithDetails: (CampaignCard & { favorite_id: string; favorite_created_at: string })[] = []
 
-    for (const [category, itemIds] of Object.entries(favoritesByCategory)) {
-      const tableName = categoryTables[category as CampaignCategory]
-      if (!tableName || itemIds.length === 0) continue
-
-      const { data: campaigns } = await supabase
-        .from(tableName)
-        .select('id, name, slug, introduction, thumbnail_url, region, is_featured, week_start_date, day_of_week')
-        .in('id', itemIds)
-
-      if (campaigns) {
-        for (const campaign of campaigns) {
-          const favorite = favorites?.find(f => f.item_id === campaign.id)
-          campaignsWithDetails.push({
-            id: campaign.id,
-            name: campaign.name,
-            slug: campaign.slug,
-            introduction: campaign.introduction,
-            thumbnail_url: campaign.thumbnail_url,
-            category: category as CampaignCategory,
-            is_featured: campaign.is_featured,
-            region: campaign.region,
-            week_start_date: campaign.week_start_date,
-            day_of_week: campaign.day_of_week,
-            isFavorite: true,
-            favorite_id: favorite?.id || '',
-            favorite_created_at: favorite?.created_at || '',
-            // Legacy fields
-            title: campaign.name,
-            description: campaign.introduction,
-          })
-        }
+    for (const { category, campaigns } of categoryResults) {
+      for (const campaign of campaigns) {
+        const favorite = favorites?.find(f => f.item_id === campaign.id)
+        campaignsWithDetails.push({
+          id: campaign.id,
+          name: campaign.name,
+          slug: campaign.slug,
+          introduction: campaign.introduction,
+          thumbnail_url: campaign.thumbnail_url,
+          category: category as CampaignCategory,
+          is_featured: campaign.is_featured,
+          region: campaign.region,
+          week_start_date: campaign.week_start_date,
+          day_of_week: campaign.day_of_week,
+          isFavorite: true,
+          favorite_id: favorite?.id || '',
+          favorite_created_at: favorite?.created_at || '',
+          // Legacy fields
+          title: campaign.name,
+          description: campaign.introduction,
+        })
       }
     }
 

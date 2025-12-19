@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { TemplateWithFields, Campaign } from '@/types'
+import { TemplateWithFields, UserCampaignCollection } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -69,7 +69,7 @@ export function TemplateEditor({ template, isNew = false }: TemplateEditorProps)
   })
 
   // Campaign state
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaigns, setCampaigns] = useState<UserCampaignCollection[]>([])
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
 
   // System prompts state
@@ -330,7 +330,7 @@ export function TemplateEditor({ template, isNew = false }: TemplateEditorProps)
     }
   }
 
-  const handleStartEditCampaign = (campaign: Campaign) => {
+  const handleStartEditCampaign = (campaign: UserCampaignCollection) => {
     setEditingCampaignId(campaign.id)
     setEditCampaignName(campaign.name)
     setEditCampaignColor(campaign.color)

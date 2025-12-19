@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CampaignCategory } from '@/types/campaigns'
-
-// Map category to table name
-const categoryTableMap: Record<CampaignCategory, string> = {
-  'phone-text-scripts': 'phone_text_scripts',
-  'email-campaigns': 'email_campaigns',
-  'direct-mail': 'direct_mail_templates',
-  'social-shareables': 'social_shareables',
-}
+import { CATEGORY_TABLE_MAP, isValidCategory } from '@/lib/campaign-utils'
 
 export async function GET(
   request: NextRequest,
@@ -19,11 +12,11 @@ export async function GET(
     const supabase = await createClient()
 
     // Validate category
-    if (!categoryTableMap[category as CampaignCategory]) {
+    if (!isValidCategory(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
-    const tableName = categoryTableMap[category as CampaignCategory]
+    const tableName = CATEGORY_TABLE_MAP[category]
 
     // Fetch the campaign
     const { data: campaign, error } = await supabase

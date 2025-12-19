@@ -73,9 +73,10 @@ export function CampaignList({
     const supabase = createClient()
 
     try {
+      // Select only columns needed for the list view (not SELECT *)
       const { data, error } = await supabase
         .from(tableName)
-        .select('*')
+        .select('id, name, slug, thumbnail_url, region, is_active, is_featured, created_at, updated_at')
         .order(sortColumn, { ascending: sortDirection === 'asc' })
         .limit(100)
 

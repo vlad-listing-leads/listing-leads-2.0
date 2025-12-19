@@ -135,34 +135,31 @@ export async function PUT(request: NextRequest) {
       fieldKeyToId[f.field_key] = f.id
     })
 
-    // Upsert each value
-    for (const [fieldKey, value] of Object.entries(values)) {
-      const fieldId = fieldKeyToId[fieldKey]
-      if (!fieldId) continue
+    // Build batch upsert data (much faster than sequential queries)
+    const upsertData = Object.entries(values)
+      .filter(([fieldKey]) => fieldKeyToId[fieldKey])
+      .map(([fieldKey, value]) => ({
+        user_id: user.id,
+        field_id: fieldKeyToId[fieldKey],
+        value,
+        updated_at: new Date().toISOString(),
+      }))
 
-      // Check if value exists
-      const { data: existing } = await supabase
+    // Single batch upsert instead of N sequential queries
+    if (upsertData.length > 0) {
+      const { error: upsertError } = await supabase
         .from('profile_values')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('field_id', fieldId)
-        .single()
+        .upsert(upsertData, {
+          onConflict: 'user_id,field_id',
+          ignoreDuplicates: false
+        })
 
-      if (existing) {
-        // Update
-        await supabase
-          .from('profile_values')
-          .update({ value, updated_at: new Date().toISOString() })
-          .eq('id', existing.id)
-      } else {
-        // Insert
-        await supabase
-          .from('profile_values')
-          .insert({
-            user_id: user.id,
-            field_id: fieldId,
-            value,
-          })
+      if (upsertError) {
+        console.error('Error upserting profile values:', upsertError)
+        return NextResponse.json(
+          { error: 'Failed to update profile values' },
+          { status: 500 }
+        )
       }
     }
 

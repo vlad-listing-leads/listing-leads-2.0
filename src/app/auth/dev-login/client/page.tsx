@@ -4,8 +4,10 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
-const DEV_USER_EMAIL = 'dev@localhost.test'
-const DEV_USER_PASSWORD = 'dev-password-12345!'
+// SECURITY: Dev credentials must come from environment variables
+// These are only available in development when DEV_LOGIN_ENABLED=true
+const DEV_USER_EMAIL = process.env.NEXT_PUBLIC_DEV_USER_EMAIL || 'dev@localhost.test'
+const DEV_USER_PASSWORD = process.env.NEXT_PUBLIC_DEV_USER_PASSWORD
 
 function DevLoginContent() {
   const router = useRouter()
@@ -15,6 +17,13 @@ function DevLoginContent() {
 
   useEffect(() => {
     const signIn = async () => {
+      // SECURITY: Check that dev password is configured
+      if (!DEV_USER_PASSWORD) {
+        setStatus('Error: Dev login not configured')
+        console.error('NEXT_PUBLIC_DEV_USER_PASSWORD is not set')
+        return
+      }
+
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

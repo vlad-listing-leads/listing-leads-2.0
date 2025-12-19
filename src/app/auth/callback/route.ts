@@ -2,36 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
-// Shared secret for verifying tokens from the main site
-const AUTH_SECRET = process.env.MEMBERSTACK_AUTH_SECRET || 'dev-secret-change-in-production'
+// Shared secret for verifying tokens from the main site - MUST be set in production
+const AUTH_SECRET = process.env.MEMBERSTACK_AUTH_SECRET
 
 function verifyToken(memberstackId: string, email: string, timestamp: string, token: string): boolean {
-  // Allow test token when using default secret (for initial testing)
-  if (AUTH_SECRET === 'dev-secret-change-in-production' && token === 'dev-test') {
-    return true
-  }
-
-  // Allow test token matching the secret (simple auth for testing)
-  if (token === AUTH_SECRET) {
-    return true
-  }
-
-  // Verify the token is a valid HMAC of the data
-  const data = `${memberstackId}:${email}:${timestamp}`
-  const expectedToken = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex')
-
-  if (token !== expectedToken) {
+  // SECURITY: Require AUTH_SECRET to be configured
+  if (!AUTH_SECRET) {
+    console.error('CRITICAL: MEMBERSTACK_AUTH_SECRET is not configured')
     return false
   }
 
-  // Check timestamp is within 5 minutes
+  // Check timestamp is within 5 minutes (check first to prevent timing attacks)
   const ts = parseInt(timestamp, 10)
   const now = Date.now()
   if (isNaN(ts) || Math.abs(now - ts) > 5 * 60 * 1000) {
     return false
   }
 
-  return true
+  // Verify the token is a valid HMAC of the data
+  const data = `${memberstackId}:${email}:${timestamp}`
+  const expectedToken = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex')
+
+  // Use constant-time comparison to prevent timing attacks
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(token, 'hex'),
+      Buffer.from(expectedToken, 'hex')
+    )
+  } catch {
+    // If tokens have different lengths or invalid hex, comparison fails
+    return false
+  }
 }
 
 function createAdminClient() {

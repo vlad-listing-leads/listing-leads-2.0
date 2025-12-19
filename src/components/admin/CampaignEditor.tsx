@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Spinner } from '@/components/ui/spinner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { generateSlug, stripHtml, checkSlugUniqueness } from '@/lib/slug-utils'
 
 export interface FieldConfig {
   name: string
@@ -53,12 +54,6 @@ export function CampaignEditor({
 
   const isEditing = !!campaignId
 
-  // Strip HTML tags from a string
-  const stripHtml = (html: string) => {
-    if (!html) return ''
-    return html.replace(/<[^>]*>/g, '').trim()
-  }
-
   useEffect(() => {
     if (campaignId) {
       fetchCampaign()
@@ -99,17 +94,8 @@ export function CampaignEditor({
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-  }
-
-  // Check if slug is unique
-  const checkSlugUniqueness = useCallback(async (slug: string) => {
+  // Check if slug is unique using the utility function
+  const handleSlugCheck = useCallback(async (slug: string) => {
     if (!slug) {
       setSlugStatus('idle')
       return
@@ -117,31 +103,12 @@ export function CampaignEditor({
 
     setSlugStatus('checking')
     const supabase = createClient()
+    const result = await checkSlugUniqueness(supabase, tableName, slug, campaignId)
 
-    try {
-      let query = supabase
-        .from(tableName)
-        .select('id')
-        .eq('slug', slug)
-        .limit(1)
-
-      // Exclude current campaign when editing
-      if (campaignId) {
-        query = query.neq('id', campaignId)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Slug check error:', error)
-        setSlugStatus('idle')
-        return
-      }
-
-      setSlugStatus(data && data.length > 0 ? 'taken' : 'available')
-    } catch (err) {
-      console.error('Slug check error:', err)
+    if (result === 'error') {
       setSlugStatus('idle')
+    } else {
+      setSlugStatus(result)
     }
   }, [tableName, campaignId])
 
@@ -159,7 +126,7 @@ export function CampaignEditor({
         clearTimeout(slugCheckTimeout.current)
       }
       slugCheckTimeout.current = setTimeout(() => {
-        checkSlugUniqueness(newSlug)
+        handleSlugCheck(newSlug)
       }, 500)
     }
   }
@@ -174,7 +141,7 @@ export function CampaignEditor({
       clearTimeout(slugCheckTimeout.current)
     }
     slugCheckTimeout.current = setTimeout(() => {
-      checkSlugUniqueness(cleanSlug)
+      handleSlugCheck(cleanSlug)
     }, 500)
   }
 

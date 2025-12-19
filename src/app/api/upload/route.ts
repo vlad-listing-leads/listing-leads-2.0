@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ImageKit from 'imagekit'
+import { createClient } from '@/lib/supabase/server'
 
 // Lazy initialization to avoid build errors when env vars are missing
 let imagekitClient: ImageKit | null = null
@@ -17,6 +18,14 @@ function getImageKitClient(): ImageKit {
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require authentication for file uploads
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const folder = (formData.get('folder') as string) || '/'

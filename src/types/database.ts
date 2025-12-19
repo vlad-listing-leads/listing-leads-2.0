@@ -6,178 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type FieldType =
-  | 'text'
-  | 'textarea'
-  | 'select'
-  | 'image'
-  | 'color'
-  | 'url'
-  | 'email'
-  | 'phone'
-
-export type CustomizationStatus = 'draft' | 'published'
-
 export type UserRole = 'user' | 'admin'
 
 export interface Database {
   public: {
     Tables: {
-      templates: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          html_content: string
-          thumbnail_url: string | null
-          is_active: boolean
-          size: string | null
-          campaign_id: string | null
-          system_prompt_id: string | null
-          template_prompt: string | null
-          artifact_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          html_content: string
-          thumbnail_url?: string | null
-          is_active?: boolean
-          size?: string | null
-          campaign_id?: string | null
-          system_prompt_id?: string | null
-          template_prompt?: string | null
-          artifact_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          html_content?: string
-          thumbnail_url?: string | null
-          is_active?: boolean
-          size?: string | null
-          campaign_id?: string | null
-          system_prompt_id?: string | null
-          template_prompt?: string | null
-          artifact_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      template_fields: {
-        Row: {
-          id: string
-          template_id: string
-          field_key: string
-          field_type: FieldType
-          label: string
-          placeholder: string | null
-          default_value: string | null
-          options: Json | null
-          is_required: boolean
-          display_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          template_id: string
-          field_key: string
-          field_type: FieldType
-          label: string
-          placeholder?: string | null
-          default_value?: string | null
-          options?: Json | null
-          is_required?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          template_id?: string
-          field_key?: string
-          field_type?: FieldType
-          label?: string
-          placeholder?: string | null
-          default_value?: string | null
-          options?: Json | null
-          is_required?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      customizations: {
-        Row: {
-          id: string
-          user_id: string
-          template_id: string
-          name: string
-          status: CustomizationStatus
-          created_at: string
-          updated_at: string
-          published_at: string | null
-          published_url: string | null
-          thumbnail_url: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          template_id: string
-          name: string
-          status?: CustomizationStatus
-          created_at?: string
-          updated_at?: string
-          published_at?: string | null
-          published_url?: string | null
-          thumbnail_url?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          template_id?: string
-          name?: string
-          status?: CustomizationStatus
-          created_at?: string
-          updated_at?: string
-          published_at?: string | null
-          published_url?: string | null
-          thumbnail_url?: string | null
-        }
-      }
-      field_values: {
-        Row: {
-          id: string
-          customization_id: string
-          field_id: string
-          value: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          customization_id: string
-          field_id: string
-          value?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          customization_id?: string
-          field_id?: string
-          value?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
       profiles: {
         Row: {
           id: string
@@ -186,6 +19,7 @@ export interface Database {
           last_name: string | null
           memberstack_id: string | null
           role: UserRole
+          region: string | null
           created_at: string
           updated_at: string
         }
@@ -196,6 +30,7 @@ export interface Database {
           last_name?: string | null
           memberstack_id?: string | null
           role?: UserRole
+          region?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -206,6 +41,7 @@ export interface Database {
           last_name?: string | null
           memberstack_id?: string | null
           role?: UserRole
+          region?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -218,30 +54,12 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      field_type: FieldType
-      customization_status: CustomizationStatus
       user_role: UserRole
     }
   }
 }
 
-// Convenience types
-export type Template = Database['public']['Tables']['templates']['Row']
-export type TemplateInsert = Database['public']['Tables']['templates']['Insert']
-export type TemplateUpdate = Database['public']['Tables']['templates']['Update']
-
-export type TemplateField = Database['public']['Tables']['template_fields']['Row']
-export type TemplateFieldInsert = Database['public']['Tables']['template_fields']['Insert']
-export type TemplateFieldUpdate = Database['public']['Tables']['template_fields']['Update']
-
-export type Customization = Database['public']['Tables']['customizations']['Row']
-export type CustomizationInsert = Database['public']['Tables']['customizations']['Insert']
-export type CustomizationUpdate = Database['public']['Tables']['customizations']['Update']
-
-export type FieldValue = Database['public']['Tables']['field_values']['Row']
-export type FieldValueInsert = Database['public']['Tables']['field_values']['Insert']
-export type FieldValueUpdate = Database['public']['Tables']['field_values']['Update']
-
+// Profile types
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
@@ -257,26 +75,133 @@ export interface SystemPrompt {
   updated_at: string
 }
 
-// Extended types with relations
+// ============================================================================
+// DEPRECATED TYPES - These are for the old templates/customizations feature
+// that has been removed. Keeping temporarily for backwards compatibility.
+// TODO: Remove these types and their usages in a future cleanup.
+// ============================================================================
+
+/** @deprecated Templates feature has been removed */
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'select'
+  | 'image'
+  | 'color'
+  | 'url'
+  | 'email'
+  | 'phone'
+
+/** @deprecated Templates feature has been removed */
+export type CustomizationStatus = 'draft' | 'published'
+
+/** @deprecated Templates feature has been removed */
+export interface Template {
+  id: string
+  name: string
+  description: string | null
+  html_content: string
+  thumbnail_url: string | null
+  is_active: boolean
+  size: string | null
+  campaign_id: string | null
+  system_prompt_id: string | null
+  template_prompt: string | null
+  artifact_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** @deprecated Templates feature has been removed */
+export type TemplateInsert = Partial<Template> & { name: string; html_content: string }
+
+/** @deprecated Templates feature has been removed */
+export type TemplateUpdate = Partial<Template>
+
+/** @deprecated Templates feature has been removed */
+export interface TemplateField {
+  id: string
+  template_id: string
+  field_key: string
+  field_type: FieldType
+  label: string
+  placeholder: string | null
+  default_value: string | null
+  options: Json | null
+  is_required: boolean
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+/** @deprecated Templates feature has been removed */
+export type TemplateFieldInsert = Partial<TemplateField> & { template_id: string; field_key: string; field_type: FieldType; label: string }
+
+/** @deprecated Templates feature has been removed */
+export type TemplateFieldUpdate = Partial<TemplateField>
+
+/** @deprecated Templates feature has been removed */
+export interface Customization {
+  id: string
+  user_id: string
+  template_id: string
+  name: string
+  status: CustomizationStatus
+  created_at: string
+  updated_at: string
+  published_at: string | null
+  published_url: string | null
+  thumbnail_url: string | null
+}
+
+/** @deprecated Templates feature has been removed */
+export type CustomizationInsert = Partial<Customization> & { user_id: string; template_id: string; name: string }
+
+/** @deprecated Templates feature has been removed */
+export type CustomizationUpdate = Partial<Customization>
+
+/** @deprecated Templates feature has been removed */
+export interface FieldValue {
+  id: string
+  customization_id: string
+  field_id: string
+  value: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** @deprecated Templates feature has been removed */
+export type FieldValueInsert = Partial<FieldValue> & { customization_id: string; field_id: string }
+
+/** @deprecated Templates feature has been removed */
+export type FieldValueUpdate = Partial<FieldValue>
+
+/** @deprecated Templates feature has been removed */
 export interface TemplateWithFields extends Template {
   template_fields: TemplateField[]
 }
 
+/** @deprecated Templates feature has been removed */
 export interface TemplateWithSystemPrompt extends Template {
   system_prompt: { name: string } | null
 }
 
+/** @deprecated Templates feature has been removed */
 export interface CustomizationWithDetails extends Customization {
   template: Template
   field_values: (FieldValue & { template_field: TemplateField })[]
 }
 
+/** @deprecated Templates feature has been removed */
 export interface FieldValueWithField extends FieldValue {
   template_field: TemplateField
 }
 
-// Campaign types
-export interface Campaign {
+/**
+ * @deprecated This was for user campaign collections in the old templates feature.
+ * For actual campaign types, use Campaign from @/types/campaigns instead.
+ */
+export interface UserCampaignCollection {
   id: string
   user_id: string
   name: string
@@ -288,12 +213,14 @@ export interface Campaign {
   template_count?: number
 }
 
+/** @deprecated Use UserCampaignCollection instead */
 export interface CampaignInsert {
   name: string
   description?: string | null
   color?: string
 }
 
+/** @deprecated Use UserCampaignCollection instead */
 export interface CampaignUpdate {
   name?: string
   description?: string | null
