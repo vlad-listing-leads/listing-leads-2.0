@@ -1,4 +1,6 @@
 // Memberstack configuration
+// Public key starts with 'pk_' - get from Memberstack Dashboard > Settings > Dev Tools
+export const MEMBERSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY
 export const MEMBERSTACK_APP_ID = process.env.NEXT_PUBLIC_MEMBERSTACK_APP_ID
 export const MEMBERSTACK_LOGIN_URL = process.env.NEXT_PUBLIC_MEMBERSTACK_LOGIN_URL || 'https://listingleads.com/login'
 
@@ -21,14 +23,15 @@ async function initMemberstack(): Promise<MemberstackInstance | null> {
   if (memberstackInstance) {
     return memberstackInstance
   }
-  if (!MEMBERSTACK_APP_ID) {
+  if (!MEMBERSTACK_PUBLIC_KEY) {
+    console.error('NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY is not set. Get your pk_ key from Memberstack Dashboard > Settings > Dev Tools')
     return null
   }
 
   // Dynamically import to avoid SSR issues
   const memberstackDOM = (await import('@memberstack/dom')).default
   memberstackInstance = memberstackDOM.init({
-    publicKey: MEMBERSTACK_APP_ID,
+    publicKey: MEMBERSTACK_PUBLIC_KEY,
   }) as unknown as MemberstackInstance
   return memberstackInstance
 }
