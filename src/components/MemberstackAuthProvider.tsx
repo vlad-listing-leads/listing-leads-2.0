@@ -11,7 +11,7 @@ interface MemberstackAuthProviderProps {
 }
 
 // Pages that don't require auth
-const PUBLIC_PATHS = ['/login', '/register', '/api', '/auth']
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/register', '/api', '/auth']
 
 // Global auth lock to prevent multiple simultaneous auth attempts
 const AUTH_LOCK_KEY = 'memberstack_auth_in_progress'
@@ -172,8 +172,8 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
       const memberstack = await waitForMemberstack()
 
       if (!memberstack) {
-        // Memberstack SDK didn't load - redirect to login
-        window.location.href = MEMBERSTACK_LOGIN_URL
+        // Memberstack SDK didn't load - redirect to in-app login
+        window.location.href = '/login'
         return
       }
 
@@ -199,12 +199,12 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
           }
         }
 
-        // No Memberstack session - redirect to main site login
-        window.location.href = MEMBERSTACK_LOGIN_URL
+        // No Memberstack session - redirect to in-app login
+        window.location.href = '/login'
       } catch (err) {
         console.error('Error checking Memberstack:', err)
         clearAuthLock()
-        window.location.href = MEMBERSTACK_LOGIN_URL
+        window.location.href = '/login'
       }
     }
 

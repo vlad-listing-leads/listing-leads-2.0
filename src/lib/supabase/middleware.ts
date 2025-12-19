@@ -1,9 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const MEMBERSTACK_LOGIN_URL = process.env.NEXT_PUBLIC_MEMBERSTACK_LOGIN_URL || 'https://listingleads.com/login'
 const IS_DEV = process.env.NODE_ENV === 'development'
-const DEV_USER_EMAIL = 'dev@localhost.test'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -38,8 +36,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Dev mode: auto-redirect to dev login if not authenticated
-  if (IS_DEV && !user && !request.nextUrl.pathname.startsWith('/api/') && !request.nextUrl.pathname.startsWith('/auth/') && !request.nextUrl.pathname.startsWith('/preview/')) {
+  // Public auth paths that don't require authentication
+  const publicPaths = ['/api/', '/auth/', '/preview/', '/login', '/signup', '/forgot-password']
+  const isPublicPath = publicPaths.some((path) => request.nextUrl.pathname.startsWith(path))
+
+  // Dev mode: auto-redirect to dev login if not authenticated (skip for public paths)
+  if (IS_DEV && !user && !isPublicPath) {
     const devLoginUrl = new URL('/auth/dev-login', request.url)
     devLoginUrl.searchParams.set('redirect', request.nextUrl.pathname)
     return NextResponse.redirect(devLoginUrl)
@@ -59,9 +61,8 @@ export async function updateSession(request: NextRequest) {
   // Check admin access - admin routes still need explicit protection
   if (isAdminPath) {
     if (!user) {
-      // For admin routes, redirect to Memberstack login if not authenticated
-      const loginUrl = new URL(MEMBERSTACK_LOGIN_URL)
-      loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+      // For admin routes, redirect to login if not authenticated
+      const loginUrl = new URL('/login', request.url)
       return NextResponse.redirect(loginUrl)
     }
 
