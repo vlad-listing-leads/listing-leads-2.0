@@ -17,6 +17,7 @@ import {
   Megaphone,
   Video,
   Youtube,
+  Instagram,
   Moon,
   Sun
 } from 'lucide-react'
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
   { name: 'Kickoffs', href: '/admin/kickoffs', icon: Video },
   { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
+  { name: 'Short Videos', href: '/admin/short-videos', icon: Instagram },
   { name: 'Email Campaigns', href: '/admin/campaigns/email', icon: Mail },
   { name: 'Phone/Text Scripts', href: '/admin/campaigns/phone-text-scripts', icon: Phone },
   { name: 'Social Shareables', href: '/admin/campaigns/social', icon: Share2 },
