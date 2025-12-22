@@ -208,7 +208,7 @@ async function syncCompanyIcons() {
   const { data: companies, error } = await supabase
     .from('ad_companies')
     .select('id, name, icon_url')
-    .like('icon_url', '%website-files.com%')
+    .or('icon_url.like.%website-files.com%,icon_url.like.%webflow.com%')
     .limit(LIMIT)
 
   if (error) {
