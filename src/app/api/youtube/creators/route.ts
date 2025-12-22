@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // GET: List all creators
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const searchParams = request.nextUrl.searchParams
+    const search = searchParams.get('search') || ''
 
-    const { data: creators, error } = await supabase
+    let query = supabase
       .from('video_creators')
       .select('*')
       .order('name', { ascending: true })
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`)
+    }
+
+    const { data: creators, error } = await query
 
     if (error) {
       console.error('Error fetching creators:', error)

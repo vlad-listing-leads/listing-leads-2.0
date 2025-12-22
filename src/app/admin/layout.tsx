@@ -18,6 +18,7 @@ import {
   Video,
   Youtube,
   Instagram,
+  Trophy,
   Moon,
   Sun
 } from 'lucide-react'
@@ -54,6 +55,7 @@ const navigationSections = [
     items: [
       { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
       { name: 'Short Videos', href: '/admin/short-videos', icon: Instagram },
+      { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
       { name: 'Ads', href: '/admin/ads', icon: Megaphone },
     ],
   },

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(creators || [])
+    return NextResponse.json({ creators: creators || [] })
   } catch (error) {
     console.error('Error fetching creators:', error)
     return NextResponse.json({ error: 'Failed to fetch creators' }, { status: 500 })
