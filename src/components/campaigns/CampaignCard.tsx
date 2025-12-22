@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CampaignCard as CampaignCardType, categoryConfig, CampaignCategory } from '@/types/campaigns'
@@ -58,7 +59,7 @@ const categoryFadeColors: Record<CampaignCategory, string> = {
   'direct-mail': 'from-transparent via-[#FFEFEA]/80 to-[#FFEFEA]',
 }
 
-export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) {
+export const CampaignCard = memo(function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isFavorite, setIsFavorite] = useState(campaign.isFavorite || false)
   const [isLoading, setIsLoading] = useState(false)
@@ -70,7 +71,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
   const fadeClass = categoryFadeColors[campaign.category]
   const detailUrl = `/campaigns/${campaign.category}/${campaign.slug}`
 
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (isLoading) return
@@ -98,7 +99,7 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [campaign.id, campaign.category, isFavorite, isLoading, onFavoriteToggle])
 
   // Show skeleton placeholder until card is in view
   if (!isInView) {
@@ -131,11 +132,12 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
       <div className="aspect-[4/3] relative overflow-hidden">
         {campaign.thumbnail_url ? (
           <>
-            <img
+            <Image
               src={campaign.thumbnail_url}
               alt={campaign.name}
-              loading="lazy"
-              className="absolute inset-0 w-full h-full object-contain object-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-contain object-center scale-[0.85] group-hover:scale-[0.9] transition-transform duration-300 ease-out"
             />
             {/* Bottom fade mask */}
             <div className={cn('absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-b pointer-events-none', fadeClass)} />
@@ -178,4 +180,4 @@ export function CampaignCard({ campaign, onFavoriteToggle }: CampaignCardProps) 
       </div>
     </Link>
   )
-}
+})

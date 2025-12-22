@@ -131,7 +131,7 @@ export default function CampaignDetailPage() {
         <main className="flex-1 p-8">
           <div className="max-w-4xl mx-auto text-center py-20">
             <h1 className="text-2xl font-bold text-foreground mb-4">Campaign not found</h1>
-            <p className="text-muted-foreground mb-6">The campaign you're looking for doesn't exist or has been removed.</p>
+            <p className="text-muted-foreground mb-6">The campaign you&apos;re looking for doesn&apos;t exist or has been removed.</p>
             <Button onClick={() => router.back()}>Go Back</Button>
           </div>
         </main>
@@ -243,7 +243,7 @@ export default function CampaignDetailPage() {
         {'target_audience' in campaign && campaign.target_audience && (
           <section className="mb-8 pb-8 border-b border-border">
             <h2 className="text-xl font-bold text-foreground mb-2">Recommended Audience</h2>
-            <p className="text-sm text-muted-foreground mb-4">For best results with this campaign, you'll want to have these core lists ready.</p>
+            <p className="text-sm text-muted-foreground mb-4">For best results with this campaign, you&apos;ll want to have these core lists ready.</p>
 
             <div className="space-y-2">
               {/* Farm List */}
@@ -260,7 +260,7 @@ export default function CampaignDetailPage() {
                     This is your core mailing audience—used for general awareness and market education. Build your list using the following filters:
                   </p>
                   <ul className="text-sm text-foreground space-y-1.5 list-disc list-inside">
-                    <li>Homeowners who've owned for <strong>10+ years</strong></li>
+                    <li>Homeowners who&apos;ve owned for <strong>10+ years</strong></li>
                     <li><strong>50%+ equity</strong></li>
                     <li>Areas with strong <strong>total commission opportunity</strong> (transaction volume × average price)</li>
                   </ul>
@@ -384,7 +384,7 @@ export default function CampaignDetailPage() {
 
                   <div className="space-y-3">
                     {['text_message_1', 'text_message_2', 'text_message_3'].map((key, index) => {
-                      const message = (campaign as any)[key]
+                      const message = (campaign as unknown as Record<string, string | undefined>)[key]
                       if (!message) return null
                       // Strip HTML tags for plain text display and copying
                       const plainTextMessage = message.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()

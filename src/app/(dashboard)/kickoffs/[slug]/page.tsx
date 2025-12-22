@@ -206,7 +206,7 @@ export default function KickoffDetailPage() {
         <main className="flex-1 p-8">
           <div className="max-w-4xl mx-auto text-center py-20">
             <h1 className="text-2xl font-bold text-foreground mb-4">Kickoff not found</h1>
-            <p className="text-muted-foreground mb-6">The kickoff you're looking for doesn't exist or has been removed.</p>
+            <p className="text-muted-foreground mb-6">The kickoff you&apos;re looking for doesn&apos;t exist or has been removed.</p>
             <Button onClick={() => router.back()}>Go Back</Button>
           </div>
         </main>
@@ -413,7 +413,7 @@ export default function KickoffDetailPage() {
           <section className="mb-8">
             <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
               <CalendarDays className="w-5 h-5" />
-              This Week's Campaigns
+              This Week&apos;s Campaigns
             </h2>
 
             <div className="bg-card border border-border rounded-xl overflow-hidden">

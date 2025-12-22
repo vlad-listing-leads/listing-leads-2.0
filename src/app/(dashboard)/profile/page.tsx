@@ -489,8 +489,50 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
+      <div className="max-w-6xl mx-auto">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-8 w-48 bg-muted animate-pulse rounded mb-2" />
+            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="h-10 w-20 bg-muted animate-pulse rounded" />
+        </div>
+
+        <div className="flex gap-8">
+          {/* Left navigation skeleton */}
+          <nav className="hidden lg:block w-56 flex-shrink-0">
+            <div className="sticky top-24 space-y-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
+              ))}
+            </div>
+          </nav>
+
+          {/* Main content skeleton */}
+          <div className="flex-1 min-w-0 space-y-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-6 border-b border-border">
+                  <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
+                      <div className="h-10 bg-muted animate-pulse rounded" />
+                    </div>
+                    <div>
+                      <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
+                      <div className="h-10 bg-muted animate-pulse rounded" />
+                    </div>
+                  </div>
+                  <div className="h-10 w-32 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

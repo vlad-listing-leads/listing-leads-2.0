@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Mail, Phone, FileBox, Share2, Star, Video, Image } from 'lucide-react'
+import { Search, Mail, Phone, FileBox, Share2, Star, Video, Image, Megaphone, Instagram, Youtube, Building2 } from 'lucide-react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { cn } from '@/lib/utils'
 
@@ -15,13 +15,22 @@ interface SearchResult {
   category: string
   is_featured: boolean
   is_video?: boolean
+  type: 'campaign' | 'creator'
+  // Creator-specific fields
+  company?: { name: string; icon_url: string | null }
+  creator?: { name: string; handle?: string }
+  platform?: string
+  channel?: string
 }
 
 interface GroupedResults {
   'phone-text-scripts': SearchResult[]
-  email: SearchResult[]
+  'email-campaigns': SearchResult[]
   'direct-mail': SearchResult[]
-  social: SearchResult[]
+  'social-shareables': SearchResult[]
+  ads: SearchResult[]
+  'short-videos': SearchResult[]
+  'youtube-videos': SearchResult[]
 }
 
 const categoryConfig = {
@@ -30,24 +39,49 @@ const categoryConfig = {
     icon: Phone,
     color: 'text-green-500',
     path: '/campaigns/phone-text-scripts',
+    type: 'campaign',
   },
-  email: {
+  'email-campaigns': {
     label: 'Email Campaigns',
     icon: Mail,
     color: 'text-blue-500',
-    path: '/campaigns/email',
+    path: '/campaigns/email-campaigns',
+    type: 'campaign',
   },
   'direct-mail': {
     label: 'Direct Mail',
     icon: FileBox,
     color: 'text-orange-500',
     path: '/campaigns/direct-mail',
+    type: 'campaign',
   },
-  social: {
+  'social-shareables': {
     label: 'Social Shareables',
     icon: Share2,
     color: 'text-purple-500',
-    path: '/campaigns/social',
+    path: '/campaigns/social-shareables',
+    type: 'campaign',
+  },
+  ads: {
+    label: 'Best Ads',
+    icon: Megaphone,
+    color: 'text-blue-600',
+    path: '/social/best-ads',
+    type: 'creator',
+  },
+  'short-videos': {
+    label: 'Instagram Reels',
+    icon: Instagram,
+    color: 'text-pink-500',
+    path: '/social/instagram-reels',
+    type: 'creator',
+  },
+  'youtube-videos': {
+    label: 'YouTube Videos',
+    icon: Youtube,
+    color: 'text-red-500',
+    path: '/social/youtube-videos',
+    type: 'creator',
   },
 }
 
@@ -131,8 +165,13 @@ export function GlobalSearch() {
   const handleSelect = (result: SearchResult) => {
     const config = categoryConfig[result.category as keyof typeof categoryConfig]
     if (config) {
-      // Navigate to the specific campaign detail page
-      router.push(`${config.path}/${result.slug}`)
+      // For creator content, just navigate to the list page
+      // For campaigns, navigate to the specific campaign detail page
+      if (config.type === 'creator') {
+        router.push(config.path)
+      } else {
+        router.push(`${config.path}/${result.slug}`)
+      }
       setOpen(false)
       setQuery('')
     }
@@ -140,10 +179,13 @@ export function GlobalSearch() {
 
   const hasResults =
     results &&
-    (results['phone-text-scripts'].length > 0 ||
-      results.email.length > 0 ||
-      results['direct-mail'].length > 0 ||
-      results.social.length > 0)
+    (results['phone-text-scripts']?.length > 0 ||
+      results['email-campaigns']?.length > 0 ||
+      results['direct-mail']?.length > 0 ||
+      results['social-shareables']?.length > 0 ||
+      results.ads?.length > 0 ||
+      results['short-videos']?.length > 0 ||
+      results['youtube-videos']?.length > 0)
 
   return (
     <div ref={containerRef} className="relative w-full max-w-xs">
@@ -159,7 +201,7 @@ export function GlobalSearch() {
         )}
       >
         <Search className="w-4 h-4" />
-        <span className="flex-1 text-left">Search campaigns...</span>
+        <span className="flex-1 text-left">Search...</span>
         <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
@@ -185,7 +227,7 @@ export function GlobalSearch() {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Search all campaigns..."
+              placeholder="Search campaigns, ads, videos..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -206,7 +248,7 @@ export function GlobalSearch() {
 
             {!isLoading && query.length >= 2 && !hasResults && (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                No campaigns found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
 
@@ -239,7 +281,10 @@ export function GlobalSearch() {
                       >
                         {/* Thumbnail or Icon */}
                         {result.thumbnail_url ? (
-                          <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                          <div className={cn(
+                            "rounded-md overflow-hidden bg-muted flex-shrink-0",
+                            key === 'short-videos' ? "w-8 h-14" : "w-10 h-10"
+                          )}>
                             <img
                               src={result.thumbnail_url}
                               alt=""
@@ -264,16 +309,37 @@ export function GlobalSearch() {
                             {result.is_featured && (
                               <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                             )}
-                            {key === 'social' && result.is_video && (
+                            {key === 'social-shareables' && result.is_video && (
                               <Video className="w-3 h-3 text-purple-500 flex-shrink-0" />
                             )}
-                            {key === 'social' && !result.is_video && (
+                            {key === 'social-shareables' && !result.is_video && (
                               <Image className="w-3 h-3 text-purple-400 flex-shrink-0" />
                             )}
                           </div>
+                          {/* Campaign introduction */}
                           {result.introduction && (
                             <p className="text-xs text-muted-foreground truncate">
                               {result.introduction}
+                            </p>
+                          )}
+                          {/* Creator content meta */}
+                          {key === 'ads' && result.company && (
+                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                              {result.company.icon_url && (
+                                <img src={result.company.icon_url} alt="" className="w-3 h-3 rounded" />
+                              )}
+                              {result.company.name}
+                              {result.channel && ` · ${result.channel === 'meta' ? 'Meta' : 'Google'}`}
+                            </p>
+                          )}
+                          {key === 'short-videos' && result.creator && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              @{result.creator.handle || result.creator.name}
+                            </p>
+                          )}
+                          {key === 'youtube-videos' && result.creator && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {result.creator.name}
                             </p>
                           )}
                         </div>

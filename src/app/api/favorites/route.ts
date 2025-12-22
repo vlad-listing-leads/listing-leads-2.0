@@ -3,6 +3,66 @@ import { createClient } from '@/lib/supabase/server'
 import { CampaignCategory, CampaignCard } from '@/types/campaigns'
 import { CATEGORY_TABLE_MAP } from '@/lib/campaign-utils'
 
+// Extended category to table mapping including creator content
+const EXTENDED_CATEGORY_TABLE_MAP: Record<string, string> = {
+  ...CATEGORY_TABLE_MAP,
+  'ads': 'ads',
+  'short-videos': 'short_videos',
+  'youtube-videos': 'youtube_videos',
+}
+
+// Creator content categories
+const CREATOR_CATEGORIES = ['ads', 'short-videos', 'youtube-videos']
+
+// Base item interface from database queries
+interface FavoriteItemBase {
+  id: string
+  name: string
+  slug: string
+  thumbnail_url?: string | null
+  image_url?: string | null
+  cover_url?: string | null
+  channel?: string
+  company?: unknown
+  platform?: string
+  creator?: unknown
+  youtube_id?: string
+  description?: string
+  // Campaign-specific
+  introduction?: string | null
+  is_featured?: boolean
+  region?: string
+  week_start_date?: string | null
+  day_of_week?: number | null
+}
+
+// Result favorite interface
+interface FavoriteResult {
+  id: string
+  name: string
+  slug: string
+  category: string
+  type: 'campaign' | 'creator'
+  thumbnail_url: string | null | undefined
+  description?: string | null
+  isFavorite: boolean
+  favorite_id?: string
+  favorite_created_at?: string
+  // Campaign-specific fields
+  introduction?: string | null
+  is_featured?: boolean
+  region?: string
+  week_start_date?: string | null
+  day_of_week?: number | null
+  title?: string
+  // Creator-specific fields
+  channel?: string
+  company?: unknown
+  platform?: string
+  creator?: unknown
+  youtube_id?: string
+}
+
 // Get user's favorites with campaign details
 export async function GET() {
   try {
@@ -34,56 +94,101 @@ export async function GET() {
       favoritesByCategory[fav.category].push(fav.item_id)
     }
 
-    // Fetch campaign details for all categories in PARALLEL (not sequential)
+    // Fetch details for all categories in PARALLEL
     const categoryQueries = Object.entries(favoritesByCategory)
       .filter(([category, itemIds]) => {
-        const tableName = CATEGORY_TABLE_MAP[category as CampaignCategory]
+        const tableName = EXTENDED_CATEGORY_TABLE_MAP[category]
         return tableName && itemIds.length > 0
       })
       .map(async ([category, itemIds]) => {
-        const tableName = CATEGORY_TABLE_MAP[category as CampaignCategory]
-        const { data: campaigns } = await supabase
-          .from(tableName)
-          .select('id, name, slug, introduction, thumbnail_url, region, is_featured, week_start_date, day_of_week')
-          .in('id', itemIds)
-        return { category, campaigns: campaigns || [] }
+        const tableName = EXTENDED_CATEGORY_TABLE_MAP[category]
+
+        // Different select based on category type
+        if (category === 'ads') {
+          const { data } = await supabase
+            .from(tableName)
+            .select('id, name, slug, image_url, channel, company:ad_companies(name, icon_url)')
+            .in('id', itemIds)
+          return { category, items: data || [] }
+        } else if (category === 'short-videos') {
+          const { data } = await supabase
+            .from(tableName)
+            .select('id, name, slug, cover_url, platform, creator:short_video_creators(name, handle)')
+            .in('id', itemIds)
+          return { category, items: data || [] }
+        } else if (category === 'youtube-videos') {
+          const { data } = await supabase
+            .from(tableName)
+            .select('id, name, slug, thumbnail_url, youtube_id, creator:video_creators(name)')
+            .in('id', itemIds)
+          return { category, items: data || [] }
+        } else {
+          // Campaign categories
+          const { data } = await supabase
+            .from(tableName)
+            .select('id, name, slug, introduction, thumbnail_url, region, is_featured, week_start_date, day_of_week')
+            .in('id', itemIds)
+          return { category, items: data || [] }
+        }
       })
 
     const categoryResults = await Promise.all(categoryQueries)
 
-    // Build the results from parallel query responses
-    const campaignsWithDetails: (CampaignCard & { favorite_id: string; favorite_created_at: string })[] = []
+    // Build the results
+    const allFavorites: FavoriteResult[] = []
 
-    for (const { category, campaigns } of categoryResults) {
-      for (const campaign of campaigns) {
-        const favorite = favorites?.find(f => f.item_id === campaign.id)
-        campaignsWithDetails.push({
-          id: campaign.id,
-          name: campaign.name,
-          slug: campaign.slug,
-          introduction: campaign.introduction,
-          thumbnail_url: campaign.thumbnail_url,
-          category: category as CampaignCategory,
-          is_featured: campaign.is_featured,
-          region: campaign.region,
-          week_start_date: campaign.week_start_date,
-          day_of_week: campaign.day_of_week,
-          isFavorite: true,
-          favorite_id: favorite?.id || '',
-          favorite_created_at: favorite?.created_at || '',
-          // Legacy fields
-          title: campaign.name,
-          description: campaign.introduction,
-        })
+    for (const { category, items } of categoryResults) {
+      for (const item of items as FavoriteItemBase[]) {
+        const favorite = favorites?.find(f => f.item_id === item.id)
+
+        if (CREATOR_CATEGORIES.includes(category)) {
+          // Creator content format
+          allFavorites.push({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            category,
+            type: 'creator',
+            thumbnail_url: item.image_url || item.cover_url || item.thumbnail_url,
+            isFavorite: true,
+            favorite_id: favorite?.id || '',
+            favorite_created_at: favorite?.created_at || '',
+            // Type-specific fields
+            ...(category === 'ads' && { channel: item.channel, company: item.company }),
+            ...(category === 'short-videos' && { platform: item.platform, creator: item.creator }),
+            ...(category === 'youtube-videos' && { youtube_id: item.youtube_id, creator: item.creator }),
+          })
+        } else {
+          // Campaign format
+          allFavorites.push({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            introduction: item.introduction,
+            thumbnail_url: item.thumbnail_url,
+            category: category as CampaignCategory,
+            type: 'campaign',
+            is_featured: item.is_featured,
+            region: item.region,
+            week_start_date: item.week_start_date,
+            day_of_week: item.day_of_week,
+            isFavorite: true,
+            favorite_id: favorite?.id || '',
+            favorite_created_at: favorite?.created_at || '',
+            // Legacy fields
+            title: item.name,
+            description: item.introduction,
+          })
+        }
       }
     }
 
     // Sort by favorite creation date
-    campaignsWithDetails.sort((a, b) =>
-      new Date(b.favorite_created_at).getTime() - new Date(a.favorite_created_at).getTime()
+    allFavorites.sort((a, b) =>
+      new Date(b.favorite_created_at || 0).getTime() - new Date(a.favorite_created_at || 0).getTime()
     )
 
-    return NextResponse.json({ favorites: campaignsWithDetails })
+    return NextResponse.json({ favorites: allFavorites })
   } catch (error) {
     console.error('Favorites error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

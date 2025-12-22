@@ -1,17 +1,14 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
 import {
   Instagram,
   Search,
   Heart,
   MessageCircle,
-  X,
-  ExternalLink,
-  Volume2,
-  VolumeX,
   Play,
-  ChevronUp,
   Loader2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -70,21 +67,24 @@ function formatDuration(seconds: number | null): string {
 // Reel Card Component
 function ReelCard({
   video,
-  onClick,
+  isFavorite,
+  onToggleFavorite,
 }: {
   video: ShortVideo
-  onClick: () => void
+  isFavorite: boolean
+  onToggleFavorite: (e: React.MouseEvent) => void
 }) {
   return (
-    <div className="group cursor-pointer" onClick={onClick}>
+    <Link href={`/social/instagram-reels/${video.slug}`} className="group cursor-pointer block">
       {/* Header: Creator info */}
       <div className="flex items-center gap-2 mb-2">
         {video.creator?.avatar_url ? (
-          <img
+          <Image
             src={video.creator.avatar_url}
             alt={video.creator.name}
-            loading="lazy"
-            className="w-8 h-8 rounded-full object-cover ring-2 ring-pink-500/30"
+            width={32}
+            height={32}
+            className="rounded-full object-cover ring-2 ring-pink-500/30"
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
@@ -106,11 +106,11 @@ function ReelCard({
       {/* Video Cover with Caption Overlay */}
       <div className="relative aspect-[9/16] rounded-lg overflow-hidden bg-muted group-hover:ring-2 ring-primary/50 transition-all">
         {video.cover_url ? (
-          <img
+          <Image
             src={video.cover_url}
             alt={video.name}
-            loading="lazy"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : video.video_url ? (
           <video
@@ -134,10 +134,23 @@ function ReelCard({
 
         {/* Duration badge */}
         {video.video_runtime && (
-          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+          <div className="absolute top-2 right-10 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
             {formatDuration(video.video_runtime)}
           </div>
         )}
+
+        {/* Favorite button */}
+        <button
+          onClick={onToggleFavorite}
+          className={cn(
+            "absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all",
+            isFavorite
+              ? "bg-red-500 text-white"
+              : "bg-black/60 text-white hover:bg-black/80"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+        </button>
 
         {/* Caption overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
@@ -151,224 +164,14 @@ function ReelCard({
       <div className="flex items-center gap-4 mt-2 text-muted-foreground">
         <span className="flex items-center gap-1 text-sm">
           <Heart className="w-4 h-4" />
-          <span className="text-xs">{Math.floor(Math.random() * 900 + 100)}</span>
+          <span className="text-xs">{((video.id.charCodeAt(0) * 7 + video.id.charCodeAt(1) * 3) % 900) + 100}</span>
         </span>
         <span className="flex items-center gap-1 text-sm">
           <MessageCircle className="w-4 h-4" />
-          <span className="text-xs">{Math.floor(Math.random() * 100 + 10)}</span>
+          <span className="text-xs">{((video.id.charCodeAt(0) * 3 + video.id.charCodeAt(2) * 2) % 100) + 10}</span>
         </span>
       </div>
-    </div>
-  )
-}
-
-// Reel Detail Modal Component
-function ReelModal({
-  video,
-  onClose,
-}: {
-  video: ShortVideo
-  onClose: () => void
-}) {
-  const [isMuted, setIsMuted] = useState(true)
-  const [isPlaying, setIsPlaying] = useState(false)
-
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
-    const videoEl = e.currentTarget
-    if (videoEl.paused) {
-      videoEl.play()
-      setIsPlaying(true)
-    } else {
-      videoEl.pause()
-      setIsPlaying(false)
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-background rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row">
-        {/* Left: Video Player */}
-        <div className="relative bg-black flex-shrink-0 md:w-[400px] aspect-[9/16] md:aspect-auto md:h-[80vh]">
-          {video.video_url ? (
-            <>
-              <video
-                src={video.video_url}
-                className="w-full h-full object-contain"
-                muted={isMuted}
-                loop
-                playsInline
-                onClick={handleVideoClick}
-              />
-              {/* Mute toggle */}
-              <button
-                onClick={() => setIsMuted(!isMuted)}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-              >
-                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              </button>
-              {/* Play/pause indicator */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                    <Play className="w-10 h-10 text-white ml-1" fill="currentColor" />
-                  </div>
-                </div>
-              )}
-            </>
-          ) : video.cover_url ? (
-            <img
-              src={video.cover_url}
-              alt={video.name}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Instagram className="w-16 h-16 text-white/30" />
-            </div>
-          )}
-        </div>
-
-        {/* Right: Details */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                {video.creator?.avatar_url ? (
-                  <img
-                    src={video.creator.avatar_url}
-                    alt={video.creator.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                    {video.creator?.name?.charAt(0) || 'R'}
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">{video.creator?.name || 'Creator'}</span>
-                    <span className="text-muted-foreground">@{video.creator?.handle || 'handle'}</span>
-                  </div>
-                  {video.creator?.location && (
-                    <p className="text-sm text-muted-foreground">{video.creator.location}</p>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-muted rounded-full transition-colors"
-              >
-                <ChevronUp className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Category */}
-            {video.category && (
-              <span className="inline-flex items-center px-3 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-sm rounded-full">
-                {video.category.name}
-              </span>
-            )}
-
-            {/* Title/Description */}
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-2">{stripHtml(video.name)}</h2>
-              {video.description && (
-                <p className="text-muted-foreground whitespace-pre-wrap">{stripHtml(video.description)}</p>
-              )}
-            </div>
-
-            {/* AI Summary */}
-            {video.ai_summary && (
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground mb-2">AI Summary</h3>
-                <p className="text-sm text-muted-foreground">{video.ai_summary}</p>
-              </div>
-            )}
-
-            {/* Hook */}
-            {video.hook_text && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground mb-2">Opening Hook</h3>
-                <p className="text-sm text-muted-foreground">&quot;{video.hook_text}&quot;</p>
-              </div>
-            )}
-
-            {/* CTA */}
-            {video.cta && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground mb-2">Call to Action</h3>
-                <p className="text-sm text-muted-foreground">{video.cta}</p>
-              </div>
-            )}
-
-            {/* Triggers */}
-            {video.triggers && video.triggers.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-2">Psychological Triggers</h3>
-                <div className="flex flex-wrap gap-2">
-                  {video.triggers.map((trigger) => (
-                    <span
-                      key={trigger.id}
-                      className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full"
-                    >
-                      {trigger.emoji} {trigger.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Power Words */}
-            {video.power_words && video.power_words.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-2">Power Words</h3>
-                <div className="flex flex-wrap gap-2">
-                  {video.power_words.map((word) => (
-                    <span
-                      key={word.id}
-                      className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full"
-                    >
-                      {word.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Transcript */}
-            {video.transcript && (
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-2">Transcript</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 rounded-lg p-3">
-                  {video.transcript}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-border">
-            {video.source_url && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => window.open(video.source_url, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View on Instagram
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    </Link>
   )
 }
 
@@ -381,13 +184,13 @@ export default function InstagramReelsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [creatorFilter, setCreatorFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
-  const [selectedVideo, setSelectedVideo] = useState<ShortVideo | null>(null)
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    Promise.all([fetchVideos(), fetchCategories(), fetchCreators()])
+    Promise.all([fetchVideos(), fetchCategories(), fetchCreators(), fetchFavorites()])
   }, [])
 
   // Reset display count when filters change
@@ -426,6 +229,63 @@ export default function InstagramReelsPage() {
       if (Array.isArray(data)) setCreators(data)
     } catch (error) {
       console.error('Failed to fetch creators:', error)
+    }
+  }
+
+  const fetchFavorites = async () => {
+    try {
+      const response = await fetch('/api/favorites')
+      const data = await response.json()
+      if (data.favorites) {
+        const reelFavorites = data.favorites
+          .filter((f: { category: string; id: string }) => f.category === 'short-videos')
+          .map((f: { category: string; id: string }) => f.id)
+        setFavoriteIds(new Set(reelFavorites))
+      }
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error)
+    }
+  }
+
+  const toggleFavorite = async (videoId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const isFavorite = favoriteIds.has(videoId)
+
+    // Optimistic update
+    setFavoriteIds(prev => {
+      const next = new Set(prev)
+      if (isFavorite) {
+        next.delete(videoId)
+      } else {
+        next.add(videoId)
+      }
+      return next
+    })
+
+    try {
+      if (isFavorite) {
+        await fetch(`/api/favorites?campaignId=${videoId}&category=short-videos`, {
+          method: 'DELETE',
+        })
+      } else {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId: videoId, category: 'short-videos' }),
+        })
+      }
+    } catch (error) {
+      // Revert on error
+      setFavoriteIds(prev => {
+        const next = new Set(prev)
+        if (isFavorite) {
+          next.add(videoId)
+        } else {
+          next.delete(videoId)
+        }
+        return next
+      })
+      console.error('Failed to toggle favorite:', error)
     }
   }
 
@@ -568,8 +428,20 @@ export default function InstagramReelsPage() {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size="lg" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                  <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="aspect-[9/16] rounded-lg bg-muted animate-pulse" />
+                <div className="flex items-center gap-4">
+                  <div className="h-4 w-12 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-12 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredVideos.length === 0 ? (
           <div className="flex items-center justify-center py-20">
@@ -588,12 +460,13 @@ export default function InstagramReelsPage() {
         ) : (
           /* Reels Grid - 4 columns */
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
               {filteredVideos.map(video => (
                 <ReelCard
                   key={video.id}
                   video={video}
-                  onClick={() => setSelectedVideo(video)}
+                  isFavorite={favoriteIds.has(video.id)}
+                  onToggleFavorite={(e) => toggleFavorite(video.id, e)}
                 />
               ))}
             </div>
@@ -619,14 +492,6 @@ export default function InstagramReelsPage() {
           </>
         )}
       </main>
-
-      {/* Detail Modal */}
-      {selectedVideo && (
-        <ReelModal
-          video={selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-        />
-      )}
     </div>
   )
 }

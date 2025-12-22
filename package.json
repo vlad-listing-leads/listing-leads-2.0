@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -30,8 +34,10 @@
     "cmdk": "^1.1.1",
     "crypto-js": "^4.2.0",
     "csv-parse": "^6.1.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "flag-icons": "^7.5.0",
+    "hls.js": "^1.6.15",
     "html-to-image": "^1.11.13",
     "imagekit": "^6.0.0",
     "jspdf": "^3.0.4",

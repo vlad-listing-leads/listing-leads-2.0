@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+out
+dist
+build
+
+# Cache
+.turbo
+.vercel
+
+# Generated files
+*.min.js
+*.min.css
+package-lock.json
+
+# Static assets
+public
+
+# Environment files
+.env*

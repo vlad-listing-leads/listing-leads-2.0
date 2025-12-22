@@ -24,19 +24,46 @@ import {
 import { cn } from '@/lib/utils'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 
-const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
-  { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
-  { name: 'Kickoffs', href: '/admin/kickoffs', icon: Video },
-  { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
-  { name: 'Short Videos', href: '/admin/short-videos', icon: Instagram },
-  { name: 'Email Campaigns', href: '/admin/campaigns/email', icon: Mail },
-  { name: 'Phone/Text Scripts', href: '/admin/campaigns/phone-text-scripts', icon: Phone },
-  { name: 'Social Shareables', href: '/admin/campaigns/social', icon: Share2 },
-  { name: 'Direct Mail', href: '/admin/campaigns/direct-mail', icon: FileBox },
-  { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+// Navigation with sections
+const navigationSections = [
+  {
+    // No section label for Dashboard
+    items: [
+      { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Backend',
+    items: [
+      { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
+      { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+      { name: 'Kickoffs', href: '/admin/kickoffs', icon: Video },
+    ],
+  },
+  {
+    label: 'Campaigns',
+    items: [
+      { name: 'Email Campaigns', href: '/admin/campaigns/email', icon: Mail },
+      { name: 'Phone/Text Scripts', href: '/admin/campaigns/phone-text-scripts', icon: Phone },
+      { name: 'Social Shareables', href: '/admin/campaigns/social', icon: Share2 },
+      { name: 'Direct Mail', href: '/admin/campaigns/direct-mail', icon: FileBox },
+    ],
+  },
+  {
+    label: 'Creator',
+    items: [
+      { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
+      { name: 'Short Videos', href: '/admin/short-videos', icon: Instagram },
+      { name: 'Ads', href: '/admin/ads', icon: Megaphone },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { name: 'Users', href: '/admin/users', icon: Users },
+      { name: 'Settings', href: '/admin/settings', icon: Settings },
+    ],
+  },
 ]
 
 export default function AdminLayout({
@@ -73,31 +100,42 @@ export default function AdminLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2">
-            <ul className="space-y-1">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href ||
-                  (item.href !== '/admin' && pathname.startsWith(item.href))
-                const Icon = item.icon
+          <nav className="flex-1 px-2 overflow-y-auto">
+            <div className="space-y-6">
+              {navigationSections.map((section, sectionIndex) => (
+                <div key={sectionIndex}>
+                  {section.label && (
+                    <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {section.label}
+                    </h3>
+                  )}
+                  <ul className="space-y-1">
+                    {section.items.map((item) => {
+                      const isActive = pathname === item.href ||
+                        (item.href !== '/admin' && pathname.startsWith(item.href))
+                      const Icon = item.icon
 
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.name}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
+                      return (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                              isActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {item.name}
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </nav>
 
           {/* Footer */}

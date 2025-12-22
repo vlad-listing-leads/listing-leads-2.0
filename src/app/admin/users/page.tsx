@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/types'
 import { Spinner } from '@/components/ui/spinner'
 import { formatDateTime } from '@/lib/utils'
@@ -13,17 +12,15 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const supabase = createClient()
-
       try {
-        const { data, error: fetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false })
+        const response = await fetch('/api/admin/users')
+        const data = await response.json()
 
-        if (fetchError) throw fetchError
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch users')
+        }
 
-        setUsers(data || [])
+        setUsers(data.users || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch users')
       } finally {

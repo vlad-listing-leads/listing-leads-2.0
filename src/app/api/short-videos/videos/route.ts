@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId') || ''
     const creatorId = searchParams.get('creatorId') || ''
     const isActive = searchParams.get('isActive')
+    const slug = searchParams.get('slug') || ''
 
     // Build query
     let query = supabase
@@ -29,8 +30,15 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         creator:short_video_creators(*),
-        category:short_video_categories(*)
+        category:short_video_categories(*),
+        triggers:short_video_triggers(trigger:psychological_triggers(*)),
+        power_words:short_video_power_words(power_word:power_words(*))
       `, { count: 'exact' })
+
+    // Filter by slug for single video lookup
+    if (slug) {
+      query = query.eq('slug', slug)
+    }
 
     // Apply filters
     if (search) {
@@ -61,12 +69,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      videos: videos || [],
+    // Transform nested triggers and power_words
+    const transformedVideos = videos?.map(video => ({
+      ...video,
+      triggers: video.triggers?.map((t: { trigger: unknown }) => t.trigger).filter(Boolean) || [],
+      power_words: video.power_words?.map((p: { power_word: unknown }) => p.power_word).filter(Boolean) || [],
+    })) || []
+
+    const response = NextResponse.json({
+      videos: transformedVideos,
       total: count || 0,
       page,
       pageSize,
     })
+
+    // Cache for 5 minutes, serve stale for 1 hour while revalidating
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
+    return response
   } catch (error) {
     console.error('Error in GET /api/short-videos/videos:', error)
     return NextResponse.json(

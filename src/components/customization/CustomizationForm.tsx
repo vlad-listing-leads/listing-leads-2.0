@@ -153,7 +153,7 @@ export function CustomizationForm({
         }
 
         const data = await response.json()
-        let newHtml = data.html
+        const newHtml = data.html
 
         if (newHtml) {
           setRenderedHtml(newHtml)

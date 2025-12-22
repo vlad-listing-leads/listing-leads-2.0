@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
 import {
   Youtube,
   Search,
   Clock,
   Eye,
-  ExternalLink,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
   Loader2,
+  Heart,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -33,13 +32,13 @@ export default function YouTubeVideosPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [creatorFilter, setCreatorFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
-  const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null)
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    Promise.all([fetchVideos(), fetchCategories(), fetchCreators()])
+    Promise.all([fetchVideos(), fetchCategories(), fetchCreators(), fetchFavorites()])
   }, [])
 
   // Reset display count when filters change
@@ -78,6 +77,63 @@ export default function YouTubeVideosPage() {
       if (data.creators) setCreators(data.creators)
     } catch (error) {
       console.error('Failed to fetch creators:', error)
+    }
+  }
+
+  const fetchFavorites = async () => {
+    try {
+      const response = await fetch('/api/favorites')
+      const data = await response.json()
+      if (data.favorites) {
+        const ytFavorites = data.favorites
+          .filter((f: { category: string; id: string }) => f.category === 'youtube-videos')
+          .map((f: { category: string; id: string }) => f.id)
+        setFavoriteIds(new Set(ytFavorites))
+      }
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error)
+    }
+  }
+
+  const toggleFavorite = async (videoId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const isFavorite = favoriteIds.has(videoId)
+
+    // Optimistic update
+    setFavoriteIds(prev => {
+      const next = new Set(prev)
+      if (isFavorite) {
+        next.delete(videoId)
+      } else {
+        next.add(videoId)
+      }
+      return next
+    })
+
+    try {
+      if (isFavorite) {
+        await fetch(`/api/favorites?campaignId=${videoId}&category=youtube-videos`, {
+          method: 'DELETE',
+        })
+      } else {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId: videoId, category: 'youtube-videos' }),
+        })
+      }
+    } catch (error) {
+      // Revert on error
+      setFavoriteIds(prev => {
+        const next = new Set(prev)
+        if (isFavorite) {
+          next.add(videoId)
+        } else {
+          next.delete(videoId)
+        }
+        return next
+      })
+      console.error('Failed to toggle favorite:', error)
     }
   }
 
@@ -150,10 +206,6 @@ export default function YouTubeVideosPage() {
     return () => observer.disconnect()
   }, [hasMore, isLoadingMore, loadMore])
 
-  const toggleExpand = (videoId: string) => {
-    setExpandedVideoId(expandedVideoId === videoId ? null : videoId)
-  }
-
   return (
     <div className="flex flex-col h-full bg-background">
       <main className="flex-1 p-8 overflow-y-auto">
@@ -224,8 +276,25 @@ export default function YouTubeVideosPage() {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Spinner size="lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-card rounded-xl border border-border overflow-hidden">
+                <div className="aspect-video bg-muted animate-pulse" />
+                <div className="p-4 space-y-3">
+                  <div className="h-5 w-full bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                  <div className="flex items-center gap-4">
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  </div>
+                  <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                  <div className="flex gap-1">
+                    <div className="h-5 w-16 bg-muted animate-pulse rounded-full" />
+                    <div className="h-5 w-16 bg-muted animate-pulse rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredVideos.length === 0 ? (
           <div className="flex items-center justify-center py-20">
@@ -244,20 +313,21 @@ export default function YouTubeVideosPage() {
         ) : (
           /* Video Grid */
           <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredVideos.map(video => (
-              <div
+              <Link
                 key={video.id}
-                className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow"
+                href={`/social/youtube-videos/${video.slug}`}
+                className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow block"
               >
                 {/* Thumbnail */}
                 <div className="relative aspect-video bg-muted">
                   {video.thumbnail_url ? (
-                    <img
+                    <Image
                       src={video.thumbnail_url}
                       alt={video.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -268,6 +338,18 @@ export default function YouTubeVideosPage() {
                   <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
                     {formatDuration(video.video_runtime || 0)}
                   </div>
+                  {/* Favorite button */}
+                  <button
+                    onClick={(e) => toggleFavorite(video.id, e)}
+                    className={cn(
+                      "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                      favoriteIds.has(video.id)
+                        ? "bg-red-500 text-white"
+                        : "bg-black/60 text-white hover:bg-black/80"
+                    )}
+                  >
+                    <Heart className={cn("w-4 h-4", favoriteIds.has(video.id) && "fill-current")} />
+                  </button>
                 </div>
 
                 {/* Content */}
@@ -309,8 +391,8 @@ export default function YouTubeVideosPage() {
                   {/* Triggers & Power Words Preview */}
                   {((video.triggers && video.triggers.length > 0) ||
                     (video.power_words && video.power_words.length > 0)) && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {video.triggers?.slice(0, 3).map(trigger => (
+                    <div className="flex flex-wrap gap-1">
+                      {video.triggers?.slice(0, 2).map(trigger => (
                         <span
                           key={trigger.id}
                           className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full"
@@ -328,102 +410,8 @@ export default function YouTubeVideosPage() {
                       ))}
                     </div>
                   )}
-
-                  {/* Expand/Collapse Button */}
-                  <button
-                    onClick={() => toggleExpand(video.id)}
-                    className="flex items-center gap-1 text-sm text-primary hover:underline"
-                  >
-                    {expandedVideoId === video.id ? (
-                      <>
-                        Show less <ChevronUp className="w-4 h-4" />
-                      </>
-                    ) : (
-                      <>
-                        Show more <ChevronDown className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Expanded Content */}
-                  {expandedVideoId === video.id && (
-                    <div className="mt-4 pt-4 border-t border-border space-y-4">
-                      {/* Hook */}
-                      {video.hook?.hook_text && (
-                        <div>
-                          <h4 className="text-sm font-medium text-foreground flex items-center gap-1 mb-1">
-                            <Sparkles className="w-4 h-4 text-yellow-500" />
-                            Opening Hook
-                          </h4>
-                          <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                            &quot;{video.hook.hook_text}&quot;
-                          </p>
-                        </div>
-                      )}
-
-                      {/* CTA */}
-                      {video.cta && (
-                        <div>
-                          <h4 className="text-sm font-medium text-foreground mb-1">
-                            Call to Action
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            {video.cta}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* All Triggers */}
-                      {video.triggers && video.triggers.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium text-foreground mb-2">
-                            Psychological Triggers
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {video.triggers.map(trigger => (
-                              <span
-                                key={trigger.id}
-                                className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full"
-                              >
-                                {trigger.emoji} {trigger.name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* All Power Words */}
-                      {video.power_words && video.power_words.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium text-foreground mb-2">
-                            Power Words
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {video.power_words.map(word => (
-                              <span
-                                key={word.id}
-                                className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full"
-                              >
-                                {word.name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Watch on YouTube */}
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => window.open(video.youtube_url, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Watch on YouTube
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 

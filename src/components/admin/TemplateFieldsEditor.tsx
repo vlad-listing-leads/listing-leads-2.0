@@ -158,7 +158,7 @@ export function TemplateFieldsEditor({ fields, onChange }: TemplateFieldsEditorP
       {fields.length === 0 ? (
         <div className="text-center py-8 text-gray-500 border border-dashed border-white/10 rounded-lg">
           <p>No fields added yet</p>
-          <p className="text-xs mt-1">Click "Add Field" to create template fields</p>
+          <p className="text-xs mt-1">Click &quot;Add Field&quot; to create template fields</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -312,7 +312,7 @@ export function TemplateFieldsEditor({ fields, onChange }: TemplateFieldsEditorP
                       </div>
                       {(!field.options || field.options.length === 0) ? (
                         <p className="text-xs text-gray-500 text-center py-2">
-                          No options added. Click "Add Option" to create dropdown choices.
+                          No options added. Click &quot;Add Option&quot; to create dropdown choices.
                         </p>
                       ) : (
                         <div className="space-y-2">

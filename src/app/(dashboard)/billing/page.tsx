@@ -91,10 +91,33 @@ export default function BillingPage() {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading billing information...</p>
+          <div className="max-w-2xl space-y-6">
+            {/* Current Plan skeleton */}
+            <div className="bg-card border border-border rounded-xl p-6">
+              <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4" />
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="w-5 h-5 bg-muted animate-pulse rounded-full" />
+                      <div>
+                        <div className="h-5 w-32 bg-muted animate-pulse rounded mb-1" />
+                        <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                    <div className="h-6 w-16 bg-muted animate-pulse rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Manage Billing skeleton */}
+            <div className="bg-card border border-border rounded-xl p-6">
+              <div className="h-6 w-40 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-4 w-64 bg-muted animate-pulse rounded mb-4" />
+              <div className="flex gap-3">
+                <div className="h-10 w-32 bg-muted animate-pulse rounded" />
+                <div className="h-10 w-28 bg-muted animate-pulse rounded" />
+              </div>
             </div>
           </div>
         ) : !isMemberstackUser ? (

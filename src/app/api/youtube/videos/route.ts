@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from '@/lib/supadata'
 
-// GET: List all videos
+// GET: List all videos or get single video by slug
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -11,17 +11,62 @@ export async function GET(request: NextRequest) {
     const category_id = searchParams.get('category_id')
     const creator_id = searchParams.get('creator_id')
     const search = searchParams.get('search')
+    const slug = searchParams.get('slug')
 
+    // Pagination params
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100) // Max 100
+    const offset = (page - 1) * limit
+
+    // For single video lookup by slug, fetch full details
+    if (slug) {
+      const { data, error } = await supabase
+        .from('youtube_videos')
+        .select(`
+          *,
+          creator:video_creators(*),
+          category:video_categories(*),
+          hook:video_hooks!youtube_videos_hook_id_fkey(*),
+          triggers:youtube_video_triggers(trigger:psychological_triggers(*)),
+          power_words:youtube_video_power_words(power_word:power_words(*))
+        `)
+        .eq('slug', slug)
+        .single()
+
+      if (error) {
+        console.error('Error fetching video:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      const video = data ? {
+        ...data,
+        triggers: data.triggers?.map((t: { trigger: unknown }) => t.trigger) || [],
+        power_words: data.power_words?.map((p: { power_word: unknown }) => p.power_word) || [],
+      } : null
+
+      const response = NextResponse.json({ video })
+      response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
+      return response
+    }
+
+    // For list view, select only needed columns for better performance
     let query = supabase
       .from('youtube_videos')
       .select(`
-        *,
-        creator:video_creators(*),
-        category:video_categories(*),
-        hook:video_hooks!youtube_videos_hook_id_fkey(*),
-        triggers:youtube_video_triggers(trigger:psychological_triggers(*)),
-        power_words:youtube_video_power_words(power_word:power_words(*))
-      `)
+        id,
+        name,
+        slug,
+        thumbnail_url,
+        video_runtime,
+        view_count,
+        ai_summary,
+        is_active,
+        created_at,
+        creator:video_creators(id, name),
+        category:video_categories(id, name),
+        triggers:youtube_video_triggers(trigger:psychological_triggers(id, name, emoji)),
+        power_words:youtube_video_power_words(power_word:power_words(id, name))
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
 
     // Filter by active status (admins can see all)
@@ -41,7 +86,10 @@ export async function GET(request: NextRequest) {
       query = query.ilike('name', `%${search}%`)
     }
 
-    const { data, error } = await query
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
 
     if (error) {
       console.error('Error fetching videos:', error)
@@ -55,7 +103,19 @@ export async function GET(request: NextRequest) {
       power_words: video.power_words?.map((p: { power_word: unknown }) => p.power_word) || [],
     })) || []
 
-    return NextResponse.json({ videos })
+    const response = NextResponse.json({
+      videos,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
+      }
+    })
+
+    // Cache for 5 minutes, serve stale for 1 hour while revalidating
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
+    return response
   } catch (error) {
     console.error('Error in GET /api/youtube/videos:', error)
     return NextResponse.json(

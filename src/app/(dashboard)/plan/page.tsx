@@ -41,6 +41,53 @@ const formatWeekRange = (startDateStr: string) => {
   return `${startMonth} ${startDate.getDate()} - ${endMonth} ${endDate.getDate()}`
 }
 
+// Skeleton Card Component
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl overflow-hidden bg-gradient-to-b from-muted/50 to-muted">
+      <div className="aspect-[4/3] relative">
+        <div className="absolute inset-0 bg-muted animate-pulse" />
+      </div>
+      <div className="px-4 pb-4 pt-1 text-center">
+        <div className="h-6 w-24 mx-auto rounded-full bg-muted animate-pulse" />
+        <div className="mt-2 h-4 w-full bg-muted animate-pulse rounded" />
+        <div className="mt-1 h-4 w-3/4 mx-auto bg-muted animate-pulse rounded" />
+      </div>
+    </div>
+  )
+}
+
+// Week Skeleton Component
+function WeekSkeleton() {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  // Random number of cards per day for visual variety
+  const cardsPerDay = [2, 1, 2, 1, 2]
+
+  return (
+    <div className="grid grid-cols-5 gap-3">
+      {days.map((day, index) => (
+        <div
+          key={day}
+          className="min-w-0 bg-muted/50 rounded-xl p-4 flex flex-col"
+        >
+          {/* Day Header Skeleton */}
+          <div className="mb-3">
+            <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-12 bg-muted animate-pulse rounded mt-1" />
+          </div>
+
+          {/* Skeleton Cards */}
+          <div className="space-y-3 flex-1">
+            {Array.from({ length: cardsPerDay[index] }).map((_, cardIdx) => (
+              <SkeletonCard key={cardIdx} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Week Section Component
 function WeekSection({
   weekData,
@@ -193,7 +240,7 @@ export default function ListingAttractionPlanPage() {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground mb-2">Listing Attraction Plan</h1>
             <p className="text-muted-foreground">
-              Here's your weekly marketing plan to help you get listings now and build your pipeline for the future.
+              Here&apos;s your weekly marketing plan to help you get listings now and build your pipeline for the future.
             </p>
           </div>
 
@@ -263,12 +310,7 @@ export default function ListingAttractionPlanPage() {
 
           {/* Loading State */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading campaigns...</p>
-              </div>
-            </div>
+            <WeekSkeleton />
           ) : !currentWeek || currentWeek.campaigns.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
