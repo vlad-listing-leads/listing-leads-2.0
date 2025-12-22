@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'uploads-ssl.webflow.com',
+      },
+      {
+        protocol: 'https',
         hostname: 'i.ytimg.com',
       },
       {
