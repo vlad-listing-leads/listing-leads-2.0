@@ -108,11 +108,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract the token from the magic link
+    // Supabase uses either 'token' or 'token_hash' depending on version
     const url = new URL(linkData.properties.action_link)
-    const token = url.searchParams.get('token')
+    const token_hash = url.searchParams.get('token_hash') || url.searchParams.get('token')
     const type = url.searchParams.get('type')
 
-    if (!token) {
+    console.log('Magic link URL:', linkData.properties.action_link)
+    console.log('Extracted token_hash:', token_hash ? 'present' : 'missing')
+
+    if (!token_hash) {
       return NextResponse.json(
         { error: 'Failed to extract authentication token' },
         { status: 500 }
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
     // Return the token info for the frontend to verify
     return NextResponse.json({
       success: true,
-      token,
+      token: token_hash,
       type,
       email,
     })

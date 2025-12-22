@@ -1,18 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
-import { signupWithEmailPassword, MemberstackMember } from '@/lib/memberstack'
-import { createClient } from '@/lib/supabase/client'
+import { signupWithEmailPassword } from '@/lib/memberstack'
 
 export default function SignupPage() {
-  const router = useRouter()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -34,7 +31,7 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      // Signup with Memberstack
+      // Signup with Memberstack only
       const { member, error: signupError } = await signupWithEmailPassword(
         email,
         password,
@@ -48,54 +45,13 @@ export default function SignupPage() {
         return
       }
 
-      // Sync with Supabase backend
-      const success = await authenticateWithSupabase(member)
-
-      if (!success) {
-        setError('Failed to create session. Please try again.')
-        setIsLoading(false)
-        return
-      }
-
-      // Redirect to dashboard
-      router.push('/plan')
-      router.refresh()
+      // Successfully signed up - redirect to dashboard
+      // Memberstack handles the session via cookies automatically
+      window.location.href = '/plan'
     } catch (err) {
       console.error('Signup error:', err)
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
-    }
-  }
-
-  const authenticateWithSupabase = async (member: MemberstackMember): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/memberstack', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberstackId: member.id,
-          email: member.auth.email,
-          firstName: member.customFields?.['first-name'] || firstName,
-          lastName: member.customFields?.['last-name'] || lastName,
-        }),
-      })
-
-      if (!response.ok) {
-        return false
-      }
-
-      const data = await response.json()
-      const supabase = createClient()
-
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: data.token,
-        type: 'magiclink',
-      })
-
-      return !verifyError
-    } catch (err) {
-      console.error('Supabase auth error:', err)
-      return false
     }
   }
 

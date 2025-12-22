@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Share2, Film, Square, Youtube } from 'lucide-react'
-import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
+import { LazyGrid, CampaignFilters, CampaignGridSkeleton, SortOption } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 import { cn } from '@/lib/utils'
 
 type ContentFilter = 'all' | 'reels' | 'stories' | 'youtube'
 
 export default function SocialShareablesPage() {
-  const [campaigns, setCampaigns] = useState<(CampaignCardType & { content_type?: string })[]>([])
+  const [campaigns, setCampaigns] = useState<(CampaignCardType & { content_type?: string; created_at?: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showFeatured, setShowFeatured] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all')
 
   useEffect(() => {
@@ -37,21 +37,35 @@ export default function SocialShareablesPage() {
   const youtubeCount = campaigns.filter(c => c.content_type === 'youtube').length
 
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(campaign => {
+    const filtered = campaigns.filter(campaign => {
       const searchText = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery ||
         (campaign.name || '').toLowerCase().includes(searchText) ||
         (campaign.introduction || '').toLowerCase().includes(searchText)
 
-      const matchesFeatured = !showFeatured || campaign.is_featured
-
       const matchesContent =
         contentFilter === 'all' ||
         campaign.content_type === contentFilter
 
-      return matchesSearch && matchesFeatured && matchesContent
+      return matchesSearch && matchesContent
     })
-  }, [campaigns, searchQuery, showFeatured, contentFilter])
+
+    // Sort the filtered campaigns
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'latest':
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        case 'oldest':
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+        case 'a-z':
+          return (a.name || '').localeCompare(b.name || '')
+        case 'z-a':
+          return (b.name || '').localeCompare(a.name || '')
+        default:
+          return 0
+      }
+    })
+  }, [campaigns, searchQuery, sortBy, contentFilter])
 
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
@@ -134,8 +148,8 @@ export default function SocialShareablesPage() {
           <CampaignFilters
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            showFeatured={showFeatured}
-            onFeaturedChange={setShowFeatured}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             totalCount={campaigns.length}
             filteredCount={filteredCampaigns.length}
             placeholder="Search content..."

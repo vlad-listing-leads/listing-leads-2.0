@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { FileBox, Mail, FileText } from 'lucide-react'
-import { LazyGrid, CampaignFilters, CampaignGridSkeleton } from '@/components/campaigns'
+import { LazyGrid, CampaignFilters, CampaignGridSkeleton, SortOption } from '@/components/campaigns'
 import { CampaignCard as CampaignCardType } from '@/types/campaigns'
 import { cn } from '@/lib/utils'
 
 type MailType = 'all' | 'postcard' | 'letter'
 
 export default function DirectMailPage() {
-  const [campaigns, setCampaigns] = useState<(CampaignCardType & { mail_type?: string })[]>([])
+  const [campaigns, setCampaigns] = useState<(CampaignCardType & { mail_type?: string; created_at?: string })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showFeatured, setShowFeatured] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [mailType, setMailType] = useState<MailType>('all')
 
   useEffect(() => {
@@ -36,22 +36,36 @@ export default function DirectMailPage() {
   const letterCount = campaigns.filter(c => c.mail_type === 'letter').length
 
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(campaign => {
+    const filtered = campaigns.filter(campaign => {
       const searchText = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery ||
         (campaign.name || '').toLowerCase().includes(searchText) ||
         (campaign.introduction || '').toLowerCase().includes(searchText)
-
-      const matchesFeatured = !showFeatured || campaign.is_featured
 
       const matchesType =
         mailType === 'all' ||
         (mailType === 'postcard' && campaign.mail_type === 'postcard') ||
         (mailType === 'letter' && campaign.mail_type === 'letter')
 
-      return matchesSearch && matchesFeatured && matchesType
+      return matchesSearch && matchesType
     })
-  }, [campaigns, searchQuery, showFeatured, mailType])
+
+    // Sort the filtered campaigns
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'latest':
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        case 'oldest':
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+        case 'a-z':
+          return (a.name || '').localeCompare(b.name || '')
+        case 'z-a':
+          return (b.name || '').localeCompare(a.name || '')
+        default:
+          return 0
+      }
+    })
+  }, [campaigns, searchQuery, sortBy, mailType])
 
   const handleFavoriteToggle = (campaignId: string, isFavorite: boolean) => {
     setCampaigns(prev =>
@@ -122,8 +136,8 @@ export default function DirectMailPage() {
           <CampaignFilters
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            showFeatured={showFeatured}
-            onFeaturedChange={setShowFeatured}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             totalCount={campaigns.length}
             filteredCount={filteredCampaigns.length}
             placeholder="Search templates..."

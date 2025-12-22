@@ -386,6 +386,8 @@ export default function CampaignDetailPage() {
                     {['text_message_1', 'text_message_2', 'text_message_3'].map((key, index) => {
                       const message = (campaign as any)[key]
                       if (!message) return null
+                      // Strip HTML tags for plain text display and copying
+                      const plainTextMessage = message.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
                       return (
                         <div key={key} className="bg-card border border-border rounded-lg">
                           <div className="flex items-center justify-between px-4 py-2 border-b border-border">
@@ -393,7 +395,7 @@ export default function CampaignDetailPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => copyToClipboard(message, key)}
+                              onClick={() => copyToClipboard(plainTextMessage, key)}
                               className="h-7 text-xs"
                             >
                               {copiedText === key ? (
@@ -404,7 +406,7 @@ export default function CampaignDetailPage() {
                             </Button>
                           </div>
                           <div className="px-4 py-3">
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{message}</p>
+                            <p className="text-sm text-foreground whitespace-pre-wrap">{plainTextMessage}</p>
                           </div>
                         </div>
                       )
@@ -414,9 +416,117 @@ export default function CampaignDetailPage() {
               </div>
             )}
 
+            {/* Step 1: Get Template (for social-shareables) */}
+            {category === 'social-shareables' && 'canva_template_url' in campaign && campaign.canva_template_url && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground mt-2" />
+                <div className="flex-1">
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-medium border-0 mb-2">
+                    Step 1
+                  </Badge>
+                  <h3 className="text-base font-semibold text-foreground mb-4">Customize Your Template</h3>
+
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click the button below to open the template in Canva. Make a copy and customize it with your branding, photos, and market information.
+                    </p>
+                    <Button asChild>
+                      <a href={campaign.canva_template_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open Template in Canva
+                      </a>
+                    </Button>
+                  </div>
+
+                  {/* Video Script if available */}
+                  {'video_script' in campaign && campaign.video_script && (
+                    <div className="mt-4 bg-card border border-border rounded-lg">
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                        <span className="text-xs text-muted-foreground">Video Script</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard((campaign.video_script ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim(), 'script')}
+                          className="h-7 text-xs"
+                        >
+                          {copiedText === 'script' ? (
+                            <><Check className="w-3 h-3 mr-1 text-green-500" /> Copied</>
+                          ) : (
+                            'Copy'
+                          )}
+                        </Button>
+                      </div>
+                      <div className="px-4 py-3">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                          {(campaign.video_script ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hashtags if available */}
+                  {'hashtags' in campaign && campaign.hashtags && campaign.hashtags.length > 0 && (
+                    <div className="mt-4 bg-card border border-border rounded-lg">
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                        <span className="text-xs text-muted-foreground">Hashtags</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(campaign.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join(' '), 'hashtags')}
+                          className="h-7 text-xs"
+                        >
+                          {copiedText === 'hashtags' ? (
+                            <><Check className="w-3 h-3 mr-1 text-green-500" /> Copied</>
+                          ) : (
+                            'Copy'
+                          )}
+                        </Button>
+                      </div>
+                      <div className="px-4 py-3">
+                        <p className="text-sm text-foreground">
+                          {campaign.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join(' ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Get Template (for direct-mail) */}
+            {category === 'direct-mail' && 'canva_template_url' in campaign && campaign.canva_template_url && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground mt-2" />
+                <div className="flex-1">
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-medium border-0 mb-2">
+                    Step 1
+                  </Badge>
+                  <h3 className="text-base font-semibold text-foreground mb-4">Customize Your Template</h3>
+
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click the button below to open the template in Canva. Make a copy and customize it with your branding and contact information.
+                    </p>
+                    <Button asChild>
+                      <a href={campaign.canva_template_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open Template in Canva
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Execution Steps from database */}
             {executionSteps.map((step, index) => {
-              const stepNumber = category === 'email-campaigns' || category === 'phone-text-scripts' ? index + 2 : index + 1
+              // Calculate step number - add 1 if we showed a Step 1 for this category
+              const hasStep1 =
+                (category === 'email-campaigns' && 'subject_line' in campaign) ||
+                (category === 'phone-text-scripts') ||
+                (category === 'social-shareables' && 'canva_template_url' in campaign && campaign.canva_template_url) ||
+                (category === 'direct-mail' && 'canva_template_url' in campaign && campaign.canva_template_url)
+              const stepNumber = hasStep1 ? index + 2 : index + 1
               return (
                 <div key={index} className="flex gap-4">
                   <div className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground mt-2" />
@@ -479,12 +589,18 @@ export default function CampaignDetailPage() {
             })}
 
             {/* Final Step: Send/Target Audience */}
-            {'target_audience' in campaign && campaign.target_audience && (
+            {'target_audience' in campaign && campaign.target_audience && (() => {
+              const hasStep1 =
+                (category === 'email-campaigns' && 'subject_line' in campaign) ||
+                (category === 'phone-text-scripts') ||
+                (category === 'social-shareables' && 'canva_template_url' in campaign && campaign.canva_template_url) ||
+                (category === 'direct-mail' && 'canva_template_url' in campaign && campaign.canva_template_url)
+              return (
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground mt-2" />
                 <div className="flex-1">
                   <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-medium border-0 mb-2">
-                    Step {executionSteps.length + (category === 'email-campaigns' || category === 'phone-text-scripts' ? 2 : 1)}
+                    Step {executionSteps.length + (hasStep1 ? 2 : 1)}
                   </Badge>
                   <h3 className="text-base font-semibold text-foreground mb-3">
                     {category === 'email-campaigns' ? 'Send the email to your database' : 'Send to your target audience'}
@@ -496,12 +612,16 @@ export default function CampaignDetailPage() {
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
           </div>
         </section>
 
-        {/* Canva Template Link (if no execution steps but has template URL) */}
-        {'canva_template_url' in campaign && campaign.canva_template_url && executionSteps.length === 0 && (
+        {/* Canva Template Link (only if not already shown in Step 1 and no execution steps) */}
+        {'canva_template_url' in campaign && campaign.canva_template_url &&
+          executionSteps.length === 0 &&
+          category !== 'social-shareables' &&
+          category !== 'direct-mail' && (
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-foreground mb-4">Template</h2>
             <Button asChild>
