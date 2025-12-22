@@ -6,6 +6,24 @@ import {
 
 const SUPADATA_BASE_URL = 'https://api.supadata.ai/v1'
 
+// Rate limit handling configuration
+const RATE_LIMIT_RETRY_DELAYS = [2000, 5000, 10000] // Retry after 2s, 5s, 10s
+const MAX_RETRIES = 3
+
+/**
+ * Sleep utility for rate limit handling
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Check if error is a rate limit error
+ */
+function isRateLimitError(errorText: string): boolean {
+  return errorText.includes('limit-exceeded') || errorText.includes('rate limit')
+}
+
 /**
  * Parse YouTube video ID from various URL formats
  */
@@ -75,63 +93,128 @@ class SupadataClient {
   }
 
   /**
-   * Fetch video metadata from YouTube via Supadata
+   * Fetch video metadata from YouTube via Supadata with retry logic
    */
   async getVideoMetadata(videoId: string): Promise<SupadataVideoMetadata> {
-    const response = await fetch(
-      `${SUPADATA_BASE_URL}/youtube/video?id=${encodeURIComponent(videoId)}`,
-      {
-        headers: {
-          'x-api-key': this.apiKey,
-        },
-      }
-    )
+    let lastError: Error | null = null
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Failed to fetch video metadata: ${error}`)
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(
+          `${SUPADATA_BASE_URL}/youtube/video?id=${encodeURIComponent(videoId)}`,
+          {
+            headers: {
+              'x-api-key': this.apiKey,
+            },
+          }
+        )
+
+        if (!response.ok) {
+          const errorText = await response.text()
+
+          // If rate limited and we have retries left, wait and retry
+          if (isRateLimitError(errorText) && attempt < MAX_RETRIES) {
+            const delay = RATE_LIMIT_RETRY_DELAYS[attempt] || 10000
+            console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`)
+            await sleep(delay)
+            continue
+          }
+
+          throw new Error(`Failed to fetch video metadata: ${errorText}`)
+        }
+
+        return response.json()
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+
+        // If not a rate limit error, don't retry
+        if (!lastError.message.includes('limit-exceeded')) {
+          throw lastError
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const delay = RATE_LIMIT_RETRY_DELAYS[attempt] || 10000
+          console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`)
+          await sleep(delay)
+        }
+      }
     }
 
-    return response.json()
+    throw lastError || new Error('Failed to fetch video metadata after retries')
   }
 
   /**
-   * Fetch video transcript from YouTube via Supadata
+   * Fetch video transcript from YouTube via Supadata with retry logic
    */
   async getTranscript(videoUrl: string): Promise<string> {
-    const response = await fetch(
-      `${SUPADATA_BASE_URL}/transcript?url=${encodeURIComponent(videoUrl)}`,
-      {
-        headers: {
-          'x-api-key': this.apiKey,
-        },
-      }
-    )
+    let lastError: Error | null = null
 
-    if (!response.ok) {
-      // Transcript might not be available for all videos
-      if (response.status === 404) {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(
+          `${SUPADATA_BASE_URL}/transcript?url=${encodeURIComponent(videoUrl)}`,
+          {
+            headers: {
+              'x-api-key': this.apiKey,
+            },
+          }
+        )
+
+        if (!response.ok) {
+          // Transcript might not be available for all videos
+          if (response.status === 404) {
+            return ''
+          }
+
+          const errorText = await response.text()
+
+          // If rate limited and we have retries left, wait and retry
+          if (isRateLimitError(errorText) && attempt < MAX_RETRIES) {
+            const delay = RATE_LIMIT_RETRY_DELAYS[attempt] || 10000
+            console.log(`Rate limited on transcript, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`)
+            await sleep(delay)
+            continue
+          }
+
+          throw new Error(`Failed to fetch transcript: ${errorText}`)
+        }
+
+        const data = await response.json()
+
+        // Combine transcript segments into full text
+        if (data.content && Array.isArray(data.content)) {
+          return (data.content as SupadataTranscriptSegment[])
+            .map((segment) => segment.text)
+            .join(' ')
+            .trim()
+        }
+
         return ''
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+
+        // If not a rate limit error, don't retry
+        if (!lastError.message.includes('limit-exceeded')) {
+          throw lastError
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const delay = RATE_LIMIT_RETRY_DELAYS[attempt] || 10000
+          console.log(`Rate limited on transcript, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`)
+          await sleep(delay)
+        }
       }
-      const error = await response.text()
-      throw new Error(`Failed to fetch transcript: ${error}`)
     }
 
-    const data = await response.json()
-
-    // Combine transcript segments into full text
-    if (data.content && Array.isArray(data.content)) {
-      return (data.content as SupadataTranscriptSegment[])
-        .map((segment) => segment.text)
-        .join(' ')
-        .trim()
-    }
-
+    // If all retries failed due to rate limit, return empty transcript
+    // (don't fail the whole extraction just because transcript failed)
+    console.warn('Failed to fetch transcript after retries, continuing without it')
     return ''
   }
 
   /**
    * Extract all video data (metadata + transcript) from a YouTube URL
+   * Only 2 API calls: metadata + transcript (sequential to avoid rate limits)
    */
   async extractVideoData(youtubeUrl: string): Promise<ExtractedYouTubeData> {
     const videoId = parseYouTubeId(youtubeUrl)
@@ -139,11 +222,19 @@ class SupadataClient {
       throw new Error('Invalid YouTube URL')
     }
 
-    // Fetch metadata and transcript in parallel
-    const [metadata, transcript] = await Promise.all([
-      this.getVideoMetadata(videoId),
-      this.getTranscript(youtubeUrl).catch(() => ''), // Don't fail if transcript unavailable
-    ])
+    // Fetch metadata first (required)
+    const metadata = await this.getVideoMetadata(videoId)
+
+    // Small delay between calls to avoid rate limits
+    await sleep(1000)
+
+    // Then fetch transcript (optional - don't fail if unavailable)
+    let transcript = ''
+    try {
+      transcript = await this.getTranscript(youtubeUrl)
+    } catch (error) {
+      console.warn('Failed to fetch transcript, continuing without it:', error)
+    }
 
     return {
       youtube_id: metadata.id,

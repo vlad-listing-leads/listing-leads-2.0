@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 
+// Dev mode bypass
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
 interface AdminGuardProps {
   children: React.ReactNode
 }
@@ -15,6 +18,13 @@ export function AdminGuard({ children }: AdminGuardProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // Dev mode bypass - skip auth check entirely
+    if (DEV_AUTH_BYPASS) {
+      setIsAuthorized(true)
+      setIsLoading(false)
+      return
+    }
+
     const checkAdminAccess = async () => {
       const supabase = createClient()
 

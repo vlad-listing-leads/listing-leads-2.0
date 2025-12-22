@@ -134,6 +134,7 @@ export interface AIGeneratedFields {
   suggested_cta: string
   suggested_triggers: string[]
   suggested_power_words: string[]
+  suggested_category?: string
 }
 
 // Form Data for Creating/Editing Videos

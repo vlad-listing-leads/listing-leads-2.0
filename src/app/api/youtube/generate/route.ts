@@ -3,6 +3,9 @@ import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
 import { AIGeneratedFields } from '@/types/youtube'
 
+// Dev mode bypass for API routes
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
 // Lazy initialization to avoid build-time errors
 let openai: OpenAI | null = null
 
@@ -17,22 +20,25 @@ function getOpenAI() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if user is admin
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check if user is admin (skip in dev bypass mode)
+    if (!DEV_AUTH_BYPASS) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
 
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     // Parse request body
@@ -46,14 +52,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch existing triggers and power words for reference
-    const [{ data: triggers }, { data: powerWords }] = await Promise.all([
+    // Fetch existing triggers, power words, and categories for reference
+    const [{ data: triggers }, { data: powerWords }, { data: categories }] = await Promise.all([
       supabase.from('psychological_triggers').select('name, slug'),
       supabase.from('power_words').select('name, slug'),
+      supabase.from('video_categories').select('id, name, slug'),
     ])
 
     const triggerNames = triggers?.map(t => t.name) || []
     const powerWordNames = powerWords?.map(p => p.name) || []
+    const categoryNames = categories?.map(c => c.name) || []
 
     // Limit transcript to avoid token limits (roughly 4 chars per token, ~8k tokens max)
     const truncatedTranscript = transcript.slice(0, 30000)
@@ -66,12 +74,16 @@ You will analyze videos about real estate topics (home buying, selling, living i
 3. A call-to-action suggestion
 4. Psychological triggers used (from the provided list or suggest new ones)
 5. Power words used (from the provided list or suggest new ones)
+6. The best matching category for this video (MUST be from the existing categories list)
 
 EXISTING PSYCHOLOGICAL TRIGGERS (prefer these when applicable):
 ${triggerNames.length > 0 ? triggerNames.join(', ') : 'None yet - suggest new ones'}
 
 EXISTING POWER WORDS (prefer these when applicable):
 ${powerWordNames.length > 0 ? powerWordNames.join(', ') : 'None yet - suggest new ones'}
+
+EXISTING CATEGORIES (you MUST pick one of these):
+${categoryNames.length > 0 ? categoryNames.join(', ') : 'None available'}
 
 Respond in JSON format only, no markdown code blocks.`
 
@@ -89,7 +101,8 @@ Return a JSON object with these fields:
 - suggested_hook: string (the opening hook or most compelling statement from the first minute)
 - suggested_cta: string (a call-to-action suggestion based on the video content)
 - suggested_triggers: string[] (3-5 psychological triggers, prefer existing ones from the list)
-- suggested_power_words: string[] (5-10 power words used in the video, prefer existing ones from the list)`
+- suggested_power_words: string[] (5-10 power words used in the video, prefer existing ones from the list)
+- suggested_category: string (the EXACT name of the best matching category from the existing categories list)`
 
     const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
@@ -126,6 +139,7 @@ Return a JSON object with these fields:
       suggested_power_words: Array.isArray(generatedFields.suggested_power_words)
         ? generatedFields.suggested_power_words
         : [],
+      suggested_category: generatedFields.suggested_category || '',
     }
 
     // Match suggested triggers/power words to existing ones
@@ -145,10 +159,17 @@ Return a JSON object with these fields:
       return existing ? { name: existing.name, slug: existing.slug, isNew: false } : { name: suggestion, slug: suggestion.toLowerCase().replace(/\s+/g, '-'), isNew: true }
     })
 
+    // Match suggested category to existing one
+    const matchedCategory = categories?.find(
+      c => c.name.toLowerCase() === result.suggested_category?.toLowerCase() ||
+          c.slug === result.suggested_category?.toLowerCase().replace(/\s+/g, '-')
+    )
+
     return NextResponse.json({
       ...result,
       matched_triggers: matchedTriggers,
       matched_power_words: matchedPowerWords,
+      matched_category: matchedCategory ? { id: matchedCategory.id, name: matchedCategory.name, slug: matchedCategory.slug } : null,
     })
   } catch (error) {
     console.error('Error generating AI content:', error)

@@ -11,6 +11,9 @@ interface MemberstackAuthProviderProps {
 // Pages that don't require auth
 const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/register', '/api', '/auth', '/preview']
 
+// Dev mode bypass - check if we're in dev mode with bypass enabled
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
 export function MemberstackAuthProvider({ children }: MemberstackAuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -21,6 +24,13 @@ export function MemberstackAuthProvider({ children }: MemberstackAuthProviderPro
   useEffect(() => {
     // Public paths don't need auth check
     if (isPublicPath) {
+      setIsLoading(false)
+      return
+    }
+
+    // Dev mode bypass - skip Memberstack auth entirely in development
+    if (DEV_AUTH_BYPASS) {
+      setIsAuthenticated(true)
       setIsLoading(false)
       return
     }

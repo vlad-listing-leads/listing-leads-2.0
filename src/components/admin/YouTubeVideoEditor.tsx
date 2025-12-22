@@ -40,8 +40,10 @@ interface AIGeneratedResponse {
   suggested_cta: string
   suggested_triggers: string[]
   suggested_power_words: string[]
+  suggested_category?: string
   matched_triggers: Array<{ name: string; slug: string; isNew: boolean }>
   matched_power_words: Array<{ name: string; slug: string; isNew: boolean }>
+  matched_category?: { id: string; name: string; slug: string } | null
 }
 
 export function YouTubeVideoEditor({ videoId }: YouTubeVideoEditorProps) {
@@ -240,11 +242,75 @@ export function YouTubeVideoEditor({ videoId }: YouTubeVideoEditorProps) {
           })
         }
       }
+
+      // Auto-trigger AI generation if transcript is available
+      if (data.transcript) {
+        setIsExtracting(false) // Stop extraction loading before AI generation
+        await triggerAIGeneration(data.transcript, data.title)
+        return // Skip the finally block's setIsExtracting
+      }
     } catch (error) {
       console.error('Extract error:', error)
       setError(error instanceof Error ? error.message : 'Failed to extract video data')
     } finally {
       setIsExtracting(false)
+    }
+  }
+
+  // Separate function to trigger AI generation (used by handleExtract)
+  const triggerAIGeneration = async (transcriptText: string, titleText: string) => {
+    setIsGeneratingAI(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/youtube/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: transcriptText,
+          title: titleText,
+          description: '',
+        }),
+      })
+
+      const data: AIGeneratedResponse = await response.json()
+
+      if (!response.ok) {
+        throw new Error((data as { error?: string }).error || 'Failed to generate AI content')
+      }
+
+      // Populate AI-generated fields
+      setAiSummary(data.ai_summary)
+      setHookText(data.suggested_hook)
+      setCta(data.suggested_cta)
+
+      // Store suggestions for user to confirm
+      setSuggestedTriggers(data.matched_triggers || [])
+      setSuggestedPowerWords(data.matched_power_words || [])
+
+      // Auto-select existing triggers/power words
+      const existingTriggerIds = data.matched_triggers
+        ?.filter(t => !t.isNew)
+        .map(t => triggers.find(tr => tr.slug === t.slug)?.id)
+        .filter(Boolean) as string[]
+
+      const existingPowerWordIds = data.matched_power_words
+        ?.filter(p => !p.isNew)
+        .map(p => powerWords.find(pw => pw.slug === p.slug)?.id)
+        .filter(Boolean) as string[]
+
+      setSelectedTriggerIds(prev => [...new Set([...prev, ...existingTriggerIds])])
+      setSelectedPowerWordIds(prev => [...new Set([...prev, ...existingPowerWordIds])])
+
+      // Auto-select matched category
+      if (data.matched_category?.id) {
+        setCategoryId(data.matched_category.id)
+      }
+    } catch (error) {
+      console.error('Generate AI error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to generate AI content')
+    } finally {
+      setIsGeneratingAI(false)
     }
   }
 
@@ -296,6 +362,11 @@ export function YouTubeVideoEditor({ videoId }: YouTubeVideoEditorProps) {
 
       setSelectedTriggerIds(prev => [...new Set([...prev, ...existingTriggerIds])])
       setSelectedPowerWordIds(prev => [...new Set([...prev, ...existingPowerWordIds])])
+
+      // Auto-select matched category
+      if (data.matched_category?.id) {
+        setCategoryId(data.matched_category.id)
+      }
     } catch (error) {
       console.error('Generate AI error:', error)
       setError(error instanceof Error ? error.message : 'Failed to generate AI content')

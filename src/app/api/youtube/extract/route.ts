@@ -2,24 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupadataClient, parseYouTubeId, generateSlug } from '@/lib/supadata'
 import { createClient } from '@/lib/supabase/server'
 
+// Dev mode bypass for API routes
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
 export async function POST(request: NextRequest) {
   try {
-    // Check if user is admin
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check if user is admin (skip in dev bypass mode)
+    if (!DEV_AUTH_BYPASS) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
 
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     // Parse request body
