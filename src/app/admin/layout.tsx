@@ -13,7 +13,8 @@ import {
   Settings,
   ArrowLeft,
   Megaphone,
-  Video
+  Video,
+  Youtube
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AdminGuard } from '@/components/admin/AdminGuard'
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
   { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
   { name: 'Kickoffs', href: '/admin/kickoffs', icon: Video },
+  { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
   { name: 'Email Campaigns', href: '/admin/campaigns/email', icon: Mail },
   { name: 'Phone/Text Scripts', href: '/admin/campaigns/phone-text-scripts', icon: Phone },
   { name: 'Social Shareables', href: '/admin/campaigns/social', icon: Share2 },

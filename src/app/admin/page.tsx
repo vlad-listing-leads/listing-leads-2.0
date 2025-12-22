@@ -5,13 +5,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Spinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
-import { Mail, Phone, Share2, FileBox, Users, ArrowRight } from 'lucide-react'
+import { Mail, Phone, Share2, FileBox, Users, ArrowRight, Youtube } from 'lucide-react'
 
 interface CampaignStats {
   emailCampaigns: number
   phoneTextScripts: number
   socialShareables: number
   directMail: number
+  youtubeVideos: number
   users: number
 }
 
@@ -24,11 +25,12 @@ export default function AdminDashboard() {
       const supabase = createClient()
 
       try {
-        const [emailRes, phoneRes, socialRes, directMailRes, usersRes] = await Promise.all([
+        const [emailRes, phoneRes, socialRes, directMailRes, youtubeRes, usersRes] = await Promise.all([
           supabase.from('email_campaigns').select('id', { count: 'exact', head: true }),
           supabase.from('phone_text_scripts').select('id', { count: 'exact', head: true }),
           supabase.from('social_shareables').select('id', { count: 'exact', head: true }),
           supabase.from('direct_mail_templates').select('id', { count: 'exact', head: true }),
+          supabase.from('youtube_videos').select('id', { count: 'exact', head: true }),
           supabase.from('profiles').select('id', { count: 'exact', head: true }),
         ])
 
@@ -37,6 +39,7 @@ export default function AdminDashboard() {
           phoneTextScripts: phoneRes.count || 0,
           socialShareables: socialRes.count || 0,
           directMail: directMailRes.count || 0,
+          youtubeVideos: youtubeRes.count || 0,
           users: usersRes.count || 0,
         })
       } catch (error) {
@@ -78,6 +81,13 @@ export default function AdminDashboard() {
       icon: FileBox,
       color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
     },
+    {
+      title: 'YouTube Videos',
+      count: stats?.youtubeVideos || 0,
+      href: '/admin/youtube',
+      icon: Youtube,
+      color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+    },
   ]
 
   return (
@@ -95,7 +105,7 @@ export default function AdminDashboard() {
       ) : (
         <>
           {/* Campaign Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
             {campaignCards.map((card) => {
               const Icon = card.icon
               return (
