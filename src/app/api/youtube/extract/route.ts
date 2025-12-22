@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupadataClient, parseYouTubeId, generateSlug } from '@/lib/supadata'
 import { createClient } from '@/lib/supabase/server'
+import { uploadYouTubeThumbnail } from '@/lib/imagekit'
 
 // Dev mode bypass for API routes
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
@@ -112,12 +113,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Upload thumbnail to ImageKit (convert from YouTube URL)
+    let thumbnailUrl = videoData.thumbnail
+    if (thumbnailUrl) {
+      console.log('Uploading YouTube thumbnail to ImageKit...')
+      thumbnailUrl = await uploadYouTubeThumbnail(thumbnailUrl, videoData.youtube_id)
+      console.log('Thumbnail uploaded:', thumbnailUrl)
+    }
+
     return NextResponse.json({
       youtube_id: videoData.youtube_id,
       title: videoData.title,
       description: videoData.description,
       duration: videoData.duration,
-      thumbnail: videoData.thumbnail,
+      thumbnail: thumbnailUrl,
       uploadDate: videoData.uploadDate,
       viewCount: videoData.viewCount,
       transcript: videoData.transcript,

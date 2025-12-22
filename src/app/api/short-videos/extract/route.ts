@@ -4,9 +4,9 @@ import {
   extractAndUploadVideo,
   quickExtractMetadata,
   detectPlatform,
-  parseSourceId,
 } from '@/lib/video-extractor'
 import { transcribeFromUrl } from '@/lib/whisper'
+import { uploadShortVideoCover } from '@/lib/imagekit'
 
 // Dev mode bypass for API routes
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
@@ -50,16 +50,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Quick mode: just extract metadata without downloading
+    // Quick mode: extract metadata and upload thumbnail to ImageKit
     if (mode === 'quick') {
       const metadata = await quickExtractMetadata(url)
+
+      // Upload thumbnail to ImageKit if available
+      let thumbnailUrl = metadata.thumbnail
+      if (thumbnailUrl && metadata.sourceId) {
+        console.log('Uploading thumbnail to ImageKit...')
+        thumbnailUrl = await uploadShortVideoCover(
+          thumbnailUrl,
+          metadata.platform,
+          metadata.sourceId
+        )
+        console.log('Thumbnail uploaded:', thumbnailUrl)
+      }
+
       return NextResponse.json({
         platform: metadata.platform,
         source_id: metadata.sourceId,
         title: metadata.title,
         description: metadata.description,
         duration: metadata.duration,
-        thumbnail: metadata.thumbnail,
+        thumbnail: thumbnailUrl,
         creator: metadata.creator,
         date_posted: metadata.datePosted,
       })
