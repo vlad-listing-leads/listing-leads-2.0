@@ -25,6 +25,26 @@ type SortOption = 'latest' | 'oldest' | 'duration'
 
 const ITEMS_PER_PAGE = 24
 
+// Strip HTML tags and decode entities
+function stripHtml(html: string | null): string {
+  if (!html) return ''
+  // Remove HTML tags
+  let text = html.replace(/<[^>]*>/g, '')
+  // Decode common HTML entities
+  text = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+  // Clean up extra whitespace
+  text = text.replace(/\s+/g, ' ').trim()
+  return text
+}
+
 function formatTimeAgo(dateString: string | null): string {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -122,7 +142,7 @@ function ReelCard({
         {/* Caption overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
           <p className="text-white text-sm line-clamp-2">
-            {video.name || video.description?.slice(0, 100) || 'View reel'}
+            {stripHtml(video.name) || stripHtml(video.description)?.slice(0, 100) || 'View reel'}
           </p>
         </div>
       </div>
@@ -258,9 +278,9 @@ function ReelModal({
 
             {/* Title/Description */}
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-2">{video.name}</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">{stripHtml(video.name)}</h2>
               {video.description && (
-                <p className="text-muted-foreground whitespace-pre-wrap">{video.description}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{stripHtml(video.description)}</p>
               )}
             </div>
 
