@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Instagram,
   Search,
@@ -12,6 +12,7 @@ import {
   VolumeX,
   Play,
   ChevronUp,
+  Loader2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,8 @@ import { cn } from '@/lib/utils'
 import { ShortVideo, ShortVideoCategory, ShortVideoCreator } from '@/types/short-video'
 
 type SortOption = 'latest' | 'oldest' | 'duration'
+
+const ITEMS_PER_PAGE = 24
 
 function formatTimeAgo(dateString: string | null): string {
   if (!dateString) return ''
@@ -60,6 +63,7 @@ function ReelCard({
           <img
             src={video.creator.avatar_url}
             alt={video.creator.name}
+            loading="lazy"
             className="w-8 h-8 rounded-full object-cover ring-2 ring-pink-500/30"
           />
         ) : (
@@ -85,6 +89,7 @@ function ReelCard({
           <img
             src={video.cover_url}
             alt={video.name}
+            loading="lazy"
             className="w-full h-full object-cover"
           />
         ) : video.video_url ? (
@@ -357,10 +362,18 @@ export default function InstagramReelsPage() {
   const [creatorFilter, setCreatorFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [selectedVideo, setSelectedVideo] = useState<ShortVideo | null>(null)
+  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     Promise.all([fetchVideos(), fetchCategories(), fetchCreators()])
   }, [])
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE)
+  }, [searchQuery, categoryFilter, creatorFilter, sortBy])
 
   const fetchVideos = async () => {
     try {
@@ -396,7 +409,7 @@ export default function InstagramReelsPage() {
     }
   }
 
-  const filteredVideos = useMemo(() => {
+  const allFilteredVideos = useMemo(() => {
     return videos
       .filter(video => {
         const searchLower = searchQuery.toLowerCase()
@@ -429,6 +442,42 @@ export default function InstagramReelsPage() {
         }
       })
   }, [videos, searchQuery, categoryFilter, creatorFilter, sortBy])
+
+  // Paginated videos for display
+  const filteredVideos = useMemo(() => {
+    return allFilteredVideos.slice(0, displayCount)
+  }, [allFilteredVideos, displayCount])
+
+  const hasMore = displayCount < allFilteredVideos.length
+
+  // Load more function
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+    // Simulate slight delay for smoother UX
+    setTimeout(() => {
+      setDisplayCount(prev => Math.min(prev + ITEMS_PER_PAGE, allFilteredVideos.length))
+      setIsLoadingMore(false)
+    }, 300)
+  }, [isLoadingMore, hasMore, allFilteredVideos.length])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoadingMore, loadMore])
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -492,7 +541,7 @@ export default function InstagramReelsPage() {
             </Select>
 
             <span className="text-sm text-muted-foreground">
-              {filteredVideos.length} reel{filteredVideos.length !== 1 ? 's' : ''}
+              {filteredVideos.length} of {allFilteredVideos.length} reel{allFilteredVideos.length !== 1 ? 's' : ''}
             </span>
           </div>
         )}
@@ -518,15 +567,36 @@ export default function InstagramReelsPage() {
           </div>
         ) : (
           /* Reels Grid - 4 columns */
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-            {filteredVideos.map(video => (
-              <ReelCard
-                key={video.id}
-                video={video}
-                onClick={() => setSelectedVideo(video)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+              {filteredVideos.map(video => (
+                <ReelCard
+                  key={video.id}
+                  video={video}
+                  onClick={() => setSelectedVideo(video)}
+                />
+              ))}
+            </div>
+
+            {/* Load More Trigger */}
+            {hasMore && (
+              <div
+                ref={loadMoreRef}
+                className="flex justify-center py-8"
+              >
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Loading more...</span>
+                  </div>
+                ) : (
+                  <Button variant="outline" onClick={loadMore}>
+                    Load More
+                  </Button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Youtube,
   Search,
@@ -10,6 +10,7 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,8 @@ import { formatDuration } from '@/lib/supadata'
 
 type SortOption = 'latest' | 'oldest' | 'views' | 'duration'
 
+const ITEMS_PER_PAGE = 24
+
 export default function YouTubeVideosPage() {
   const [videos, setVideos] = useState<YouTubeVideo[]>([])
   const [categories, setCategories] = useState<VideoCategory[]>([])
@@ -31,10 +34,18 @@ export default function YouTubeVideosPage() {
   const [creatorFilter, setCreatorFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null)
+  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     Promise.all([fetchVideos(), fetchCategories(), fetchCreators()])
   }, [])
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE)
+  }, [searchQuery, categoryFilter, creatorFilter, sortBy])
 
   const fetchVideos = async () => {
     try {
@@ -70,7 +81,7 @@ export default function YouTubeVideosPage() {
     }
   }
 
-  const filteredVideos = useMemo(() => {
+  const allFilteredVideos = useMemo(() => {
     return videos
       .filter(video => {
         const searchLower = searchQuery.toLowerCase()
@@ -103,6 +114,41 @@ export default function YouTubeVideosPage() {
         }
       })
   }, [videos, searchQuery, categoryFilter, creatorFilter, sortBy])
+
+  // Paginated videos for display
+  const filteredVideos = useMemo(() => {
+    return allFilteredVideos.slice(0, displayCount)
+  }, [allFilteredVideos, displayCount])
+
+  const hasMore = displayCount < allFilteredVideos.length
+
+  // Load more function
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+    setTimeout(() => {
+      setDisplayCount(prev => Math.min(prev + ITEMS_PER_PAGE, allFilteredVideos.length))
+      setIsLoadingMore(false)
+    }, 300)
+  }, [isLoadingMore, hasMore, allFilteredVideos.length])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoadingMore, loadMore])
 
   const toggleExpand = (videoId: string) => {
     setExpandedVideoId(expandedVideoId === videoId ? null : videoId)
@@ -171,7 +217,7 @@ export default function YouTubeVideosPage() {
             </Select>
 
             <span className="text-sm text-muted-foreground">
-              {filteredVideos.length} video{filteredVideos.length !== 1 ? 's' : ''}
+              {filteredVideos.length} of {allFilteredVideos.length} video{allFilteredVideos.length !== 1 ? 's' : ''}
             </span>
           </div>
         )}
@@ -197,6 +243,7 @@ export default function YouTubeVideosPage() {
           </div>
         ) : (
           /* Video Grid */
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVideos.map(video => (
               <div
@@ -209,6 +256,7 @@ export default function YouTubeVideosPage() {
                     <img
                       src={video.thumbnail_url}
                       alt={video.name}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -378,6 +426,26 @@ export default function YouTubeVideosPage() {
               </div>
             ))}
           </div>
+
+          {/* Load More Trigger */}
+          {hasMore && (
+            <div
+              ref={loadMoreRef}
+              className="flex justify-center py-8"
+            >
+              {isLoadingMore ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading more...</span>
+                </div>
+              ) : (
+                <Button variant="outline" onClick={loadMore}>
+                  Load More
+                </Button>
+              )}
+            </div>
+          )}
+        </>
         )}
       </main>
     </div>
