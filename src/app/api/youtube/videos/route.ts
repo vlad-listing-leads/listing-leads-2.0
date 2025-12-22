@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         *,
         creator:video_creators(*),
         category:video_categories(*),
-        hook:video_hooks(*),
+        hook:video_hooks!youtube_videos_hook_id_fkey(*),
         triggers:youtube_video_triggers(trigger:psychological_triggers(*)),
         power_words:youtube_video_power_words(power_word:power_words(*))
       `)
