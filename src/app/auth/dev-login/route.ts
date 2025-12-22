@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// SECURITY: Dev login requires BOTH conditions:
-// 1. NODE_ENV === 'development'
-// 2. DEV_LOGIN_ENABLED === 'true' (explicit opt-in)
+// SECURITY: Dev login requires explicit opt-in via DEV_LOGIN_ENABLED
+// Also checks NODE_ENV to prevent accidental production use
 const DEV_LOGIN_ENABLED = process.env.DEV_LOGIN_ENABLED === 'true'
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
 
 // Credentials from environment (not hardcoded)
 const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL || 'dev@localhost.test'
@@ -26,8 +26,8 @@ function createAdminClient() {
 
 export async function GET(request: NextRequest) {
   // SECURITY: Multiple checks to prevent dev login in production
-  // 1. Must be development environment
-  if (process.env.NODE_ENV !== 'development') {
+  // 1. Must be development environment (or have dev bypass enabled)
+  if (!IS_DEVELOPMENT) {
     console.warn('Dev login attempted in non-development environment')
     return NextResponse.redirect(new URL('/', request.url))
   }

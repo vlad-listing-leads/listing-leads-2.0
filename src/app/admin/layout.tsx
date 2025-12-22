@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import {
   LayoutDashboard,
   Calendar,
@@ -14,7 +16,9 @@ import {
   ArrowLeft,
   Megaphone,
   Video,
-  Youtube
+  Youtube,
+  Moon,
+  Sun
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AdminGuard } from '@/components/admin/AdminGuard'
@@ -39,6 +43,13 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <AdminGuard>
@@ -88,7 +99,23 @@ export default function AdminLayout({
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-3">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              {mounted && theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4" />
+                  Dark Mode
+                </>
+              )}
+            </button>
             <p className="text-xs text-muted-foreground">Listing Leads CMS v1.0</p>
           </div>
         </aside>

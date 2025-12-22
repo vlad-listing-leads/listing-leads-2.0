@@ -173,7 +173,20 @@ export function Navigation() {
         </div>
 
         {/* User Menu - Right */}
-        <div className="flex-1 flex justify-end items-center">
+        <div className="flex-1 flex justify-end items-center gap-2">
+          {/* Theme Toggle - Always Visible */}
+          <button
+            onClick={handleThemeToggle}
+            className="p-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+            title={mounted && theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {mounted && theme === 'dark' ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
+
           {/* Desktop */}
           <div className="hidden md:flex items-center relative">
             <button

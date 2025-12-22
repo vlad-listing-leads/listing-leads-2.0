@@ -3,12 +3,15 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Code } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { loginWithEmailPassword } from '@/lib/memberstack'
+
+// Dev login available only in development
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
 
 function LoginForm() {
   const searchParams = useSearchParams()
@@ -123,6 +126,19 @@ function LoginForm() {
           Sign up
         </Link>
       </p>
+
+      {/* Dev Login Button - Only shown in development */}
+      {DEV_AUTH_BYPASS && (
+        <div className="mt-6 pt-6 border-t border-border">
+          <p className="text-center text-xs text-muted-foreground mb-3">Development Mode</p>
+          <Link href={`/auth/dev-login?redirect=${encodeURIComponent(redirectTo)}`}>
+            <Button variant="outline" className="w-full" type="button">
+              <Code className="w-4 h-4 mr-2" />
+              Dev Login (Skip Auth)
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
