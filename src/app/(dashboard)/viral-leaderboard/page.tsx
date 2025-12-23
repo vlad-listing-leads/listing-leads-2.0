@@ -7,70 +7,131 @@ import {
   Trophy,
   Instagram,
   Youtube,
-  Eye,
   Heart,
   MessageCircle,
-  Users,
+  Send,
+  Bookmark,
   Play,
-  Crown,
-  Medal,
-  Award,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  TrendingUp,
 } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
 import { LeaderboardEntryDisplay, FeaturedCreatorDisplay, LeaderboardType } from '@/types/leaderboard'
 import { formatEngagementNumber } from '@/lib/engagement-fetcher'
 
-// Get rank icon based on position
-function getRankIcon(rank: number) {
-  switch (rank) {
-    case 1:
-      return <Crown className="w-5 h-5 text-yellow-500" />
-    case 2:
-      return <Medal className="w-5 h-5 text-gray-400" />
-    case 3:
-      return <Award className="w-5 h-5 text-amber-600" />
-    default:
-      return null
-  }
+// Format date for display
+function formatDate(dateString: string | null): string {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
-// Get rank background color
-function getRankStyles(rank: number): string {
-  switch (rank) {
-    case 1:
-      return 'bg-gradient-to-br from-yellow-400/20 to-amber-500/20 border-yellow-500/30'
-    case 2:
-      return 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 border-gray-400/30'
-    case 3:
-      return 'bg-gradient-to-br from-amber-500/20 to-orange-600/20 border-amber-600/30'
-    default:
-      return 'bg-card border-border'
-  }
-}
-
-// Leaderboard Entry Card
-function LeaderboardCard({
-  entry,
-  rank,
-}: {
-  entry: LeaderboardEntryDisplay
-  rank: number
-}) {
+// Leaderboard Entry Card - Instagram style
+function LeaderboardEntryCard({ entry }: { entry: LeaderboardEntryDisplay }) {
   const metrics = entry.cached_engagement || { views: null, likes: null, comments: null }
-  const isTop3 = rank <= 3
+  const totalEngagement = (metrics.views || 0) + (metrics.likes || 0) + (metrics.comments || 0)
 
   // Build link based on video type
   const videoLink = entry.video_type === 'instagram'
     ? `/social/instagram-reels/${entry.short_video?.slug}`
-    : `/social/youtube/${entry.youtube_video?.slug}`
+    : `/social/youtube-videos/${entry.youtube_video?.slug}`
+
+  const sourceUrl = entry.source_url || '#'
 
   return (
-    <Link href={videoLink} className="block">
-      <div
-        className={`relative rounded-2xl border overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg ${getRankStyles(rank)}`}
-      >
-        {/* Video Thumbnail */}
-        <div className={`relative ${isTop3 ? 'aspect-video' : 'aspect-[16/10]'}`}>
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          {/* Creator avatar */}
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted">
+            {entry.creator_avatar ? (
+              <Image
+                src={entry.creator_avatar}
+                alt={entry.creator_name || ''}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Users className="w-5 h-5 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-foreground">
+                {entry.creator_handle ? `@${entry.creator_handle}` : entry.creator_name || 'Unknown'}
+              </span>
+              <Link
+                href={videoLink}
+                className="text-xs bg-muted hover:bg-muted/80 px-2.5 py-1 rounded-md font-medium transition-colors"
+              >
+                View profile
+              </Link>
+            </div>
+            {entry.creator_location && (
+              <span className="text-xs text-muted-foreground">{entry.creator_location}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Engagement badge */}
+          <div className="flex items-center gap-1.5 text-green-600">
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {formatEngagementNumber(totalEngagement)} Engagement
+            </span>
+          </div>
+
+          {/* Date */}
+          <span className="text-sm text-muted-foreground">
+            {formatDate(entry.date_posted)}
+          </span>
+        </div>
+      </div>
+
+      {/* Title & Creator attribution */}
+      <div className="px-4 pb-3">
+        <h3 className="font-semibold text-foreground mb-2">{entry.title}</h3>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full overflow-hidden bg-muted">
+            {entry.creator_avatar ? (
+              <Image
+                src={entry.creator_avatar}
+                alt=""
+                width={24}
+                height={24}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Users className="w-3 h-3 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <span className="text-sm text-foreground">
+            {entry.creator_name || 'Unknown'}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {entry.creator_handle ? `@${entry.creator_handle}` : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Video embed area */}
+      <Link href={videoLink} className="block relative">
+        <div className="relative aspect-[4/5] bg-black">
           {entry.thumbnail_url ? (
             <Image
               src={entry.thumbnail_url}
@@ -79,93 +140,98 @@ function LeaderboardCard({
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/20">
               {entry.video_type === 'instagram' ? (
-                <Instagram className="w-12 h-12 text-muted-foreground/50" />
+                <Instagram className="w-16 h-16 text-muted-foreground/50" />
               ) : (
-                <Youtube className="w-12 h-12 text-muted-foreground/50" />
+                <Youtube className="w-16 h-16 text-muted-foreground/50" />
               )}
             </div>
           )}
 
-          {/* Play overlay */}
-          <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center">
-              <Play className="w-6 h-6 text-gray-900 ml-1" fill="currentColor" />
+          {/* Play button overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+              <Play className="w-8 h-8 text-white ml-1" fill="white" />
             </div>
           </div>
 
-          {/* Platform badge */}
-          <div className="absolute top-3 left-3">
-            <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 ${
-              entry.video_type === 'instagram'
-                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
-                : 'bg-red-600 text-white'
-            }`}>
-              {entry.video_type === 'instagram' ? (
+          {/* Watch on Instagram/YouTube badge */}
+          <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-white text-xs flex items-center gap-1.5">
+            {entry.video_type === 'instagram' ? (
+              <>
                 <Instagram className="w-3 h-3" />
-              ) : (
+                Watch on Instagram
+              </>
+            ) : (
+              <>
                 <Youtube className="w-3 h-3" />
-              )}
-              <span className="capitalize">{entry.video_type}</span>
-            </div>
-          </div>
-
-          {/* Rank badge */}
-          <div className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-            isTop3
-              ? 'bg-gradient-to-br from-white/90 to-white/70 text-gray-900 shadow-lg'
-              : 'bg-black/60 text-white'
-          }`}>
-            {getRankIcon(rank) || `#${rank}`}
+                Watch on YouTube
+              </>
+            )}
           </div>
         </div>
+      </Link>
 
-        {/* Content */}
-        <div className="p-4">
-          {/* Title */}
-          <h3 className={`font-semibold text-foreground mb-2 line-clamp-2 ${isTop3 ? 'text-lg' : 'text-base'}`}>
-            {entry.title}
-          </h3>
+      {/* View more link */}
+      <a
+        href={sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block px-4 py-2 text-sm text-blue-500 hover:text-blue-600 transition-colors"
+      >
+        View more on {entry.video_type === 'instagram' ? 'Instagram' : 'YouTube'}
+      </a>
 
-          {/* Creator info */}
-          <div className="flex items-center gap-2 mb-3">
-            {entry.creator_avatar ? (
-              <Image
-                src={entry.creator_avatar}
-                alt={entry.creator_name || ''}
-                width={24}
-                height={24}
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                <Users className="w-3 h-3 text-muted-foreground" />
-              </div>
-            )}
-            <span className="text-sm text-muted-foreground truncate">
-              {entry.creator_handle ? `@${entry.creator_handle}` : entry.creator_name || 'Unknown'}
-            </span>
-          </div>
+      {/* Action buttons */}
+      <div className="px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button className="hover:text-red-500 transition-colors">
+            <Heart className="w-6 h-6" />
+          </button>
+          <button className="hover:text-foreground transition-colors">
+            <MessageCircle className="w-6 h-6" />
+          </button>
+          <button className="hover:text-foreground transition-colors">
+            <Send className="w-6 h-6" />
+          </button>
+        </div>
+        <button className="hover:text-foreground transition-colors">
+          <Bookmark className="w-6 h-6" />
+        </button>
+      </div>
 
-          {/* Engagement stats */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1" title="Views">
-              <Eye className="w-4 h-4" />
-              {formatEngagementNumber(metrics.views)}
-            </span>
-            <span className="flex items-center gap-1" title="Likes">
-              <Heart className="w-4 h-4" />
-              {formatEngagementNumber(metrics.likes)}
-            </span>
-            <span className="flex items-center gap-1" title="Comments">
-              <MessageCircle className="w-4 h-4" />
-              {formatEngagementNumber(metrics.comments)}
-            </span>
-          </div>
+      {/* Likes count */}
+      <div className="px-4 pb-2">
+        <span className="font-semibold text-sm">
+          {formatEngagementNumber(metrics.likes)} likes
+        </span>
+      </div>
+
+      {/* Add comment */}
+      <div className="px-4 pb-3">
+        <span className="text-sm text-muted-foreground">Add a comment...</span>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+        {entry.video_type === 'instagram' ? (
+          <Instagram className="w-5 h-5 text-muted-foreground" />
+        ) : (
+          <Youtube className="w-5 h-5 text-muted-foreground" />
+        )}
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          {entry.video_type === 'instagram' ? (
+            <Instagram className="w-4 h-4" />
+          ) : (
+            <Youtube className="w-4 h-4" />
+          )}
+          <span className="text-sm font-medium">
+            {entry.video_type === 'instagram' ? 'Reel' : 'Video'}
+          </span>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
 
@@ -178,24 +244,24 @@ function FeaturedCreatorCard({
   rank: number
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent/50 transition-colors">
+    <div className="flex items-center gap-3 py-2">
       {/* Rank */}
-      <span className="w-6 text-center font-bold text-muted-foreground">
+      <span className="w-5 text-sm font-medium text-muted-foreground">
         {rank}
       </span>
 
       {/* Avatar */}
-      <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-border">
+      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-muted">
         {creator.avatar_url ? (
           <Image
             src={creator.avatar_url}
             alt={creator.name}
-            width={48}
-            height={48}
+            width={40}
+            height={40}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center">
             <Users className="w-5 h-5 text-muted-foreground" />
           </div>
         )}
@@ -203,23 +269,11 @@ function FeaturedCreatorCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-foreground truncate">
-            {creator.name}
-          </span>
-          {creator.creator_type === 'instagram' ? (
-            <Instagram className="w-3.5 h-3.5 text-pink-500 flex-shrink-0" />
-          ) : (
-            <Youtube className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-          )}
+        <div className="font-medium text-sm text-foreground truncate">
+          {creator.name}
         </div>
-        {creator.handle && (
-          <span className="text-xs text-muted-foreground">@{creator.handle}</span>
-        )}
         {creator.location && (
-          <span className="text-xs text-muted-foreground block truncate">
-            {creator.location}
-          </span>
+          <span className="text-xs text-muted-foreground">{creator.location}</span>
         )}
       </div>
     </div>
@@ -232,12 +286,8 @@ export default function ViralLeaderboardPage() {
   const [creators, setCreators] = useState<FeaturedCreatorDisplay[]>([])
   const [isLoadingEntries, setIsLoadingEntries] = useState(true)
   const [isLoadingCreators, setIsLoadingCreators] = useState(true)
-
-  // Get current month for display
-  const currentMonth = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  })
+  const [page, setPage] = useState(1)
+  const entriesPerPage = 10
 
   // Fetch entries
   useEffect(() => {
@@ -266,6 +316,7 @@ export default function ViralLeaderboardPage() {
     }
 
     fetchEntries()
+    setPage(1)
   }, [activeTab])
 
   // Fetch featured creators
@@ -289,43 +340,42 @@ export default function ViralLeaderboardPage() {
     fetchCreators()
   }, [])
 
+  // Pagination
+  const totalPages = Math.ceil(entries.length / entriesPerPage)
+  const paginatedEntries = entries.slice(
+    (page - 1) * entriesPerPage,
+    page * entriesPerPage
+  )
+
   return (
     <div className="flex flex-col h-full bg-background">
       <main className="flex-1 p-8 overflow-y-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-foreground">Viral Leaderboard</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Top-performing real estate videos ranked by engagement and virality.
-          </p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Viral Leaderboard</h1>
         </div>
 
         <div className="flex gap-8">
           {/* Main content */}
-          <div className="flex-1">
+          <div className="flex-1 max-w-2xl">
             {/* Tabs */}
             <div className="flex items-center gap-2 mb-6">
               <button
                 onClick={() => setActiveTab('monthly')}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeTab === 'monthly'
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                    ? 'bg-foreground text-background'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {currentMonth}
+                This Month
               </button>
               <button
                 onClick={() => setActiveTab('staff_picks')}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeTab === 'staff_picks'
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                    ? 'bg-foreground text-background'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Staff Picks
@@ -338,7 +388,7 @@ export default function ViralLeaderboardPage() {
                 <Spinner size="lg" />
               </div>
             ) : entries.length === 0 ? (
-              <div className="text-center py-20">
+              <div className="text-center py-20 bg-card rounded-xl border border-border">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <Trophy className="w-8 h-8 text-muted-foreground" />
                 </div>
@@ -353,40 +403,37 @@ export default function ViralLeaderboardPage() {
               </div>
             ) : (
               <>
-                {/* Top 3 - Featured layout */}
-                {entries.length >= 1 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {/* First place - center on desktop */}
-                    {entries[0] && (
-                      <div className="md:col-start-2 md:row-start-1">
-                        <LeaderboardCard entry={entries[0]} rank={1} />
-                      </div>
-                    )}
-                    {/* Second place */}
-                    {entries[1] && (
-                      <div className="md:col-start-1 md:row-start-1">
-                        <LeaderboardCard entry={entries[1]} rank={2} />
-                      </div>
-                    )}
-                    {/* Third place */}
-                    {entries[2] && (
-                      <div className="md:col-start-3 md:row-start-1">
-                        <LeaderboardCard entry={entries[2]} rank={3} />
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Entries list */}
+                <div className="space-y-6">
+                  {paginatedEntries.map((entry) => (
+                    <LeaderboardEntryCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
 
-                {/* Rest of the entries */}
-                {entries.length > 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {entries.slice(3).map((entry, index) => (
-                      <LeaderboardCard
-                        key={entry.id}
-                        entry={entry}
-                        rank={index + 4}
-                      />
-                    ))}
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-4">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
                   </div>
                 )}
               </>
@@ -394,24 +441,21 @@ export default function ViralLeaderboardPage() {
           </div>
 
           {/* Featured Creators Sidebar */}
-          <div className="w-80 flex-shrink-0 hidden lg:block">
-            <div className="bg-card rounded-2xl border border-border p-5 sticky top-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Featured Creators</h2>
-              </div>
+          <div className="w-64 flex-shrink-0 hidden lg:block">
+            <div className="sticky top-4">
+              <h2 className="font-semibold text-foreground mb-4">Featured Creators</h2>
 
               {isLoadingCreators ? (
                 <div className="flex items-center justify-center py-8">
                   <Spinner size="md" />
                 </div>
               ) : creators.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
+                <p className="text-sm text-muted-foreground">
                   No featured creators yet
                 </p>
               ) : (
                 <div className="space-y-1">
-                  {creators.map((creator, index) => (
+                  {creators.slice(0, 6).map((creator, index) => (
                     <FeaturedCreatorCard
                       key={creator.id}
                       creator={creator}

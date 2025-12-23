@@ -5,9 +5,10 @@
  * This script processes short videos that were imported without media:
  * 1. Downloads video + thumbnail via yt-dlp
  * 2. Uploads to ImageKit
- * 3. Generates transcript via Whisper
- * 4. Generates AI content via OpenAI
- * 5. Updates the database
+ * 3. Fetches transcript via Supadata (falls back to local Whisper)
+ * 4. Fetches metadata via Supadata (likes, comments, description)
+ * 5. Generates AI content via OpenAI
+ * 6. Updates the database
  *
  * Usage:
  *   npx tsx scripts/process_short_videos.ts [options]
@@ -18,6 +19,7 @@
  *   --skip-media    Skip video/cover download, only do AI generation
  *   --skip-ai       Skip AI generation, only do media download
  *   --dry-run       Don't update database, just log what would happen
+ *   --local-whisper Force local Whisper instead of Supadata for transcripts
  */
 
 import * as dotenv from 'dotenv'
@@ -48,6 +50,11 @@ const DELAY_MS = parseInt(getArg('delay', '30000'))
 const SKIP_MEDIA = hasFlag('skip-media')
 const SKIP_AI = hasFlag('skip-ai')
 const DRY_RUN = hasFlag('dry-run')
+const LOCAL_WHISPER = hasFlag('local-whisper')
+
+// Supadata API configuration
+const SUPADATA_API_KEY = process.env.SUPADATA_API_KEY
+const SUPADATA_BASE_URL = 'https://api.supadata.ai/v1'
 
 // Initialize clients
 const supabase = createClient(
@@ -75,6 +82,102 @@ let stats = {
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Supadata types
+interface SupadataMetadata {
+  platform: string
+  type: string
+  id: string
+  description: string | null
+  author: {
+    username: string
+    displayName: string
+    avatarUrl: string
+    verified: boolean
+  }
+  stats: {
+    views: number | null
+    likes: number | null
+    comments: number | null
+    shares: number | null
+  }
+  media: {
+    type: string
+    duration: number
+    thumbnailUrl: string
+  }
+  tags: string[]
+  createdAt: string
+}
+
+interface SupadataTranscript {
+  lang: string
+  content: Array<{ text: string; offset: number; duration: number }>
+}
+
+/**
+ * Fetch metadata from Supadata (works for Instagram, TikTok, YouTube, etc.)
+ */
+async function fetchSupadataMetadata(url: string): Promise<SupadataMetadata | null> {
+  if (!SUPADATA_API_KEY) {
+    console.log(`  ⚠️  SUPADATA_API_KEY not set, skipping metadata fetch`)
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPADATA_BASE_URL}/metadata?url=${encodeURIComponent(url)}`,
+      { headers: { 'x-api-key': SUPADATA_API_KEY } }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      if (response.status === 404) {
+        console.log(`  ⚠️  Post not found or private on Supadata`)
+        return null
+      }
+      throw new Error(`Supadata metadata error: ${error}`)
+    }
+
+    return response.json()
+  } catch (error) {
+    console.log(`  ⚠️  Supadata metadata failed: ${error instanceof Error ? error.message : 'Unknown'}`)
+    return null
+  }
+}
+
+/**
+ * Fetch transcript from Supadata (works for Instagram, TikTok, YouTube, etc.)
+ */
+async function fetchSupadataTranscript(url: string): Promise<string | null> {
+  if (!SUPADATA_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPADATA_BASE_URL}/transcript?url=${encodeURIComponent(url)}`,
+      { headers: { 'x-api-key': SUPADATA_API_KEY } }
+    )
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null // No transcript available
+      }
+      const error = await response.text()
+      throw new Error(`Supadata transcript error: ${error}`)
+    }
+
+    const data: SupadataTranscript = await response.json()
+    if (data.content && Array.isArray(data.content)) {
+      return data.content.map(s => s.text).join(' ').trim()
+    }
+    return null
+  } catch (error) {
+    console.log(`  ⚠️  Supadata transcript failed: ${error instanceof Error ? error.message : 'Unknown'}`)
+    return null
+  }
 }
 
 async function downloadVideo(url: string, outputPath: string): Promise<void> {
@@ -294,10 +397,18 @@ async function processVideo(video: {
     let videoUrl = video.video_url
     let coverUrl: string | null = null
     let transcript = video.transcript
+    let supadataMetadata: SupadataMetadata | null = null
+
+    // Step 0: Fetch Supadata metadata (for engagement stats and description)
+    console.log(`  📊 Fetching metadata from Supadata...`)
+    supadataMetadata = await fetchSupadataMetadata(video.source_url)
+    if (supadataMetadata) {
+      console.log(`  ✓ Got metadata: ${supadataMetadata.stats.likes || 0} likes, ${supadataMetadata.stats.comments || 0} comments`)
+    }
 
     // Step 1: Download and upload media
     if (!SKIP_MEDIA && !videoUrl) {
-      console.log(`  📥 Downloading video...`)
+      console.log(`  📥 Downloading video via yt-dlp...`)
       await downloadVideo(video.source_url, videoPath)
 
       console.log(`  📤 Uploading video to ImageKit...`)
@@ -319,20 +430,32 @@ async function processVideo(video: {
       }
     }
 
-    // Step 2: Generate transcript (may be null if video has no audio)
-    if (!SKIP_AI && videoUrl && !transcript) {
-      console.log(`  🎤 Generating transcript with Whisper...`)
-
-      // Download video from ImageKit if we don't have local copy
-      if (!fs.existsSync(videoPath)) {
-        const response = await fetch(videoUrl)
-        const buffer = Buffer.from(await response.arrayBuffer())
-        fs.writeFileSync(videoPath, buffer)
+    // Step 2: Get transcript (Supadata first, then local Whisper as fallback)
+    if (!SKIP_AI && !transcript) {
+      if (!LOCAL_WHISPER && SUPADATA_API_KEY) {
+        console.log(`  🎤 Fetching transcript from Supadata...`)
+        const supadataTranscript = await fetchSupadataTranscript(video.source_url)
+        if (supadataTranscript) {
+          transcript = supadataTranscript
+          console.log(`  ✓ Got transcript (${transcript.length} chars)`)
+        } else {
+          console.log(`  ⚠️  No transcript from Supadata, trying local Whisper...`)
+        }
       }
 
-      const newTranscript = await transcribeVideo(videoPath)
-      if (newTranscript) {
-        transcript = newTranscript
+      // Fallback to local Whisper if Supadata didn't work
+      if (!transcript && videoUrl) {
+        console.log(`  🎤 Generating transcript with local Whisper...`)
+        // Download video from ImageKit if we don't have local copy
+        if (!fs.existsSync(videoPath)) {
+          const response = await fetch(videoUrl)
+          const buffer = Buffer.from(await response.arrayBuffer())
+          fs.writeFileSync(videoPath, buffer)
+        }
+        const newTranscript = await transcribeVideo(videoPath)
+        if (newTranscript) {
+          transcript = newTranscript
+        }
       }
     }
 
@@ -354,6 +477,19 @@ async function processVideo(video: {
       if (videoUrl && !video.video_url) updateData.video_url = videoUrl
       if (coverUrl) updateData.cover_url = coverUrl
       if (transcript && !video.transcript) updateData.transcript = transcript
+
+      // Update engagement stats from Supadata
+      if (supadataMetadata?.stats) {
+        if (supadataMetadata.stats.likes != null) updateData.engagement_likes = supadataMetadata.stats.likes
+        if (supadataMetadata.stats.comments != null) updateData.engagement_comments = supadataMetadata.stats.comments
+        if (supadataMetadata.stats.views != null) updateData.engagement_views = supadataMetadata.stats.views
+      }
+
+      // Update description from Supadata if we don't have one
+      if (supadataMetadata?.description && !video.description) {
+        updateData.description = supadataMetadata.description
+      }
+
       if (aiContent) {
         if (aiContent.ai_summary) updateData.ai_summary = aiContent.ai_summary
         if (aiContent.hook_text) updateData.hook_text = aiContent.hook_text
@@ -399,6 +535,7 @@ async function main() {
   console.log('\n🎬 Short Video Batch Processor')
   console.log('================================')
   console.log(`Settings: limit=${LIMIT}, delay=${DELAY_MS}ms, skip-media=${SKIP_MEDIA}, skip-ai=${SKIP_AI}, dry-run=${DRY_RUN}`)
+  console.log(`Supadata: ${SUPADATA_API_KEY ? 'enabled' : 'disabled'}, Local Whisper: ${LOCAL_WHISPER ? 'forced' : 'fallback only'}`)
   console.log('')
 
   // Fetch videos that need processing
